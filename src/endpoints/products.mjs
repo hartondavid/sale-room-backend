@@ -46,8 +46,8 @@ router.get('/getProductsSold', userAuthMiddleware, async (req, res) => {
   try {
     const products = await db('products')
       .where({ "products.user_id": req.user.id })
-      .where('products.date_end', '<', new Date())
-      .where('products.date_start', '<', new Date())
+      .where('products.end_date', '<', new Date())
+      .where('products.start_date', '<', new Date())
       .where('products.status', 'paid')
       .leftJoin('users', 'products.current_user_id', 'users.id')
       .select('products.*', 'users.name as current_user_name');
@@ -62,8 +62,8 @@ router.get('/getOffers', userAuthMiddleware, async (req, res) => {
 
 
     const products = await db('products').where({ 'products.current_user_id': req.user.id })
-      .where('products.date_end', '<', new Date())
-      .where('products.date_start', '<', new Date())
+      .where('products.end_date', '<', new Date())
+      .where('products.start_date', '<', new Date())
       .where('products.status', 'active')
 
       .leftJoin('users', 'products.current_user_id', 'users.id')
@@ -79,14 +79,12 @@ router.get('/getOffers', userAuthMiddleware, async (req, res) => {
 router.get('/getFinishedOffers', userAuthMiddleware, async (req, res) => {
   try {
     const products = await db('products').where({ user_id: req.user.id })
-      .where('products.date_end', '<', new Date())
-      .where('products.date_start', '<', new Date())
+      .where('products.end_date', '<', new Date())
+      .where('products.start_date', '<', new Date())
       .whereNot('products.status', 'paid')
       .leftJoin('users', 'products.current_user_id', 'users.id')
       .select('products.*', 'users.name as current_user_name')
 
-
-    console.log('products', products);
     return sendJsonResponse(res, true, 200, "Products fetched successfully", products);
   } catch (err) {
     return sendJsonResponse(res, false, 500, "Failed to list products", { details: err.message });
@@ -122,10 +120,10 @@ router.get('/getProduct/:productId', userAuthMiddleware, async (req, res) => {
 router.post('/createProduct', userAuthMiddleware, upload.fields([{ name: 'photo' }]), async (req, res) => {
 
   try {
-    const { name, initial_price, description, date_start, date_end } = req.body;
+    const { name, initial_price, description, start_date, end_date } = req.body;
 
 
-    if (!name || !initial_price || !description || !date_start || !date_end) {
+    if (!name || !initial_price || !description || !start_date || !end_date) {
       return sendJsonResponse(res, false, 400, "Missing required fields", []);
     }
     if (!req.files || !req.files['photo']) {
@@ -136,8 +134,8 @@ router.post('/createProduct', userAuthMiddleware, upload.fields([{ name: 'photo'
     filePathForImagePath = filePathForImagePath.replace(/^public[\\/]/, '');
 
 
-    const dateStartMySQL = toMySQLDatetime(date_start);
-    const dateEndMySQL = toMySQLDatetime(date_end);
+    const dateStartMySQL = toMySQLDatetime(start_date);
+    const dateEndMySQL = toMySQLDatetime(end_date);
 
     const productData = {
       name,
@@ -147,8 +145,8 @@ router.post('/createProduct', userAuthMiddleware, upload.fields([{ name: 'photo'
       description,
       status: 'active',
       user_id: req.user.id,
-      date_start: dateStartMySQL,
-      date_end: dateEndMySQL
+      start_date: dateStartMySQL,
+      end_date: dateEndMySQL
     };
 
     await db('products').insert(productData).returning('*');
@@ -162,7 +160,7 @@ router.post('/createProduct', userAuthMiddleware, upload.fields([{ name: 'photo'
 router.put('/updateProduct/:productId', userAuthMiddleware, upload.fields([{ name: 'photo' }]), async (req, res) => {
 
   try {
-    const { name, initial_price, description, date_start, date_end } = req.body;
+    const { name, initial_price, description, start_date, end_date } = req.body;
 
     // Fetch the current ad from the database
     const currentAd = await db('products').where('id', req.params.productId).first();
@@ -170,8 +168,8 @@ router.put('/updateProduct/:productId', userAuthMiddleware, upload.fields([{ nam
       return sendJsonResponse(res, false, 404, "Ad not found", null);
     }
 
-    const dateStartMySQL = toMySQLDatetime(date_start);
-    const dateEndMySQL = toMySQLDatetime(date_end);
+    const dateStartMySQL = toMySQLDatetime(start_date);
+    const dateEndMySQL = toMySQLDatetime(end_date);
 
 
     const updateData = {
@@ -179,8 +177,8 @@ router.put('/updateProduct/:productId', userAuthMiddleware, upload.fields([{ nam
       photo: currentAd.photo,
       initial_price: initial_price !== undefined ? initial_price : currentAd.initial_price,
       description: description !== undefined ? description : currentAd.description,
-      date_start: dateStartMySQL !== undefined ? dateStartMySQL : currentAd.date_start,
-      date_end: dateEndMySQL !== undefined ? dateEndMySQL : currentAd.date_end
+      start_date: dateStartMySQL !== undefined ? dateStartMySQL : currentAd.start_date,
+      end_date: dateEndMySQL !== undefined ? dateEndMySQL : currentAd.end_date
     };
 
 

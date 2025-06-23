@@ -9,8 +9,8 @@ exports.up = function (knex) {
     table.enum('status', ['active', 'inactive', 'paid']).defaultTo('active');
     table.integer('current_user_id').nullable();
     table.string('photo').nullable();
-    table.datetime('date_start').nullable();
-    table.datetime('date_end').nullable();
+    table.datetime('start_date').nullable();
+    table.datetime('end_date').nullable();
     table.timestamps(true, true);
   });
 };
