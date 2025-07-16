@@ -18,8 +18,8 @@ app.set('trust proxy', true);
 
 app.use(cors({
     origin: '*', // Allow any origin
-    exposedHeaders: ['X-Auth-Token', 'X-Message', 'Content-Disposition'], // Expose the custom header
-
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    exposedHeaders: ['X-Auth-Token']
 
 }));
 
