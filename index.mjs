@@ -23,59 +23,6 @@ app.use(cors({
 
 }));
 
-// Get current directory for ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Function to run custom seeds from seeds directory
-const runCustomSeeds = async () => {
-    try {
-        console.log('🌱 Running custom seeds from seeds directory...');
-        const knex = await databaseManager.getKnex();
-        const seedsDir = join(__dirname, 'seeds');
-
-        // Read all files from seeds directory
-        const files = await readdir(seedsDir);
-
-        // Filter for .cjs and .js files and sort them
-        const seedFiles = files
-            .filter(file => file.endsWith('.cjs') || file.endsWith('.js'))
-            .sort(); // This will sort alphabetically (01_, 02_, etc.)
-
-        console.log(`📁 Found ${seedFiles.length} seed files:`, seedFiles);
-
-        // Execute each seed file
-        for (const file of seedFiles) {
-            try {
-                console.log(`🌱 Executing seed file: ${file}`);
-                const filePath = join(seedsDir, file);
-
-                // Import the seed file
-                const seedModule = await import(filePath);
-
-                if (seedModule.exports && seedModule.exports.seed) {
-                    await seedModule.exports.seed(knex);
-                    console.log(`✅ Successfully executed: ${file}`);
-                } else if (seedModule.default && seedModule.default.seed) {
-                    await seedModule.default.seed(knex);
-                    console.log(`✅ Successfully executed: ${file}`);
-                } else {
-                    console.log(`⚠️ No seed function found in: ${file}`);
-                }
-            } catch (error) {
-                console.error(`❌ Error executing seed file ${file}:`, error.message);
-                // Continue with other files even if one fails
-            }
-        }
-
-        console.log('✅ Custom seeds completed successfully');
-        return true;
-    } catch (error) {
-        console.error('❌ Custom seeds failed:', error.message);
-        console.error('🔍 Error details:', error.stack);
-        return false;
-    }
-};
 
 // Run migrations before starting the server
 const runMigrations = async () => {
@@ -149,6 +96,61 @@ try {
     console.log('⚠️ Database API routes not available, using simplified version');
     console.log('🔍 Error:', error.message);
 }
+
+
+// Get current directory for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Function to run custom seeds from seeds directory
+const runCustomSeeds = async () => {
+    try {
+        console.log('🌱 Running custom seeds from seeds directory...');
+        const knex = await databaseManager.getKnex();
+        const seedsDir = join(__dirname, 'seeds');
+
+        // Read all files from seeds directory
+        const files = await readdir(seedsDir);
+
+        // Filter for .cjs and .js files and sort them
+        const seedFiles = files
+            .filter(file => file.endsWith('.cjs') || file.endsWith('.js'))
+            .sort(); // This will sort alphabetically (01_, 02_, etc.)
+
+        console.log(`📁 Found ${seedFiles.length} seed files:`, seedFiles);
+
+        // Execute each seed file
+        for (const file of seedFiles) {
+            try {
+                console.log(`🌱 Executing seed file: ${file}`);
+                const filePath = join(seedsDir, file);
+
+                // Import the seed file
+                const seedModule = await import(filePath);
+
+                if (seedModule.exports && seedModule.exports.seed) {
+                    await seedModule.exports.seed(knex);
+                    console.log(`✅ Successfully executed: ${file}`);
+                } else if (seedModule.default && seedModule.default.seed) {
+                    await seedModule.default.seed(knex);
+                    console.log(`✅ Successfully executed: ${file}`);
+                } else {
+                    console.log(`⚠️ No seed function found in: ${file}`);
+                }
+            } catch (error) {
+                console.error(`❌ Error executing seed file ${file}:`, error.message);
+                // Continue with other files even if one fails
+            }
+        }
+
+        console.log('✅ Custom seeds completed successfully');
+        return true;
+    } catch (error) {
+        console.error('❌ Custom seeds failed:', error.message);
+        console.error('🔍 Error details:', error.stack);
+        return false;
+    }
+};
 
 // Use API routes if available, otherwise use simplified routes
 if (apiRoutes) {
