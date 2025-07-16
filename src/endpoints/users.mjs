@@ -216,9 +216,9 @@ router.delete('/deleteUser/:userId', userAuthMiddleware, async (req, res) => {
       return sendJsonResponse(res, false, 403, "Nu sunteti autorizat!", []);
     }
 
-    const user = await (await db.getKnex())('users').where({ id: userId }).first();
+    const user = await db('users').where({ id: userId }).first();
     if (!user) return sendJsonResponse(res, false, 404, "Utilizatorul nu există!", []);
-    await (await db.getKnex())('users').where({ id: userId }).del();
+    await db('users').where({ id: userId }).del();
     return sendJsonResponse(res, true, 200, "Utilizatorul a fost șters cu succes!", []);
   } catch (error) {
     return sendJsonResponse(res, false, 500, "Eroare la ștergerea ingredientului!", { details: error.message });
