@@ -285,102 +285,102 @@ app.post('/test-token', async (req, res) => {
 });
 
 // Login endpoint (not protected)
-app.post('/login', async (req, res) => {
-    try {
-        const { email, password } = req.body;
+// app.post('/login', async (req, res) => {
+//     try {
+//         const { email, password } = req.body;
 
-        if (!email || !password) {
-            return res.status(400).json({
-                success: false,
-                message: "Email and password are required",
-                data: []
-            });
-        }
+//         if (!email || !password) {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: "Email and password are required",
+//                 data: []
+//             });
+//         }
 
-        console.log('🔍 Login attempt for:', email);
+//         console.log('🔍 Login attempt for:', email);
 
-        // Get user from database
-        const knex = await databaseManager.getKnex();
-        const user = await knex('users').where({ email }).first();
+//         // Get user from database
+//         const knex = await databaseManager.getKnex();
+//         const user = await knex('users').where({ email }).first();
 
-        if (!user) {
-            console.log('❌ User not found:', email);
-            return res.status(401).json({
-                success: false,
-                message: "Invalid credentials",
-                data: []
-            });
-        }
+//         if (!user) {
+//             console.log('❌ User not found:', email);
+//             return res.status(401).json({
+//                 success: false,
+//                 message: "Invalid credentials",
+//                 data: []
+//             });
+//         }
 
-        console.log('✅ User found:', { id: user.id, name: user.name, email: user.email });
+//         console.log('✅ User found:', { id: user.id, name: user.name, email: user.email });
 
-        // Hash password for comparison
-        const crypto = await import('crypto');
-        const hashedPassword = crypto.default.createHash('md5').update(password + password).digest('hex');
-        console.log('🔐 Password check:', { provided: hashedPassword, stored: user.password });
+//         // Hash password for comparison
+//         const crypto = await import('crypto');
+//         const hashedPassword = crypto.default.createHash('md5').update(password + password).digest('hex');
+//         console.log('🔐 Password check:', { provided: hashedPassword, stored: user.password });
 
-        if (hashedPassword !== user.password) {
-            console.log('❌ Password mismatch');
-            return res.status(401).json({
-                success: false,
-                message: "Invalid credentials",
-                data: []
-            });
-        }
+//         if (hashedPassword !== user.password) {
+//             console.log('❌ Password mismatch');
+//             return res.status(401).json({
+//                 success: false,
+//                 message: "Invalid credentials",
+//                 data: []
+//             });
+//         }
 
-        console.log('✅ Password verified successfully');
+//         console.log('✅ Password verified successfully');
 
-        // Generate JWT token
-        const JWT_SECRET = process.env.JWT_SECRET;
+//         // Generate JWT token
+//         const JWT_SECRET = process.env.JWT_SECRET;
 
-        if (!JWT_SECRET || JWT_SECRET === 'your_jwt_secret') {
-            console.error('❌ JWT_SECRET not properly configured! Please set JWT_SECRET environment variable.');
-            return res.status(500).json({
-                success: false,
-                message: "Server configuration error - JWT_SECRET not set",
-                data: []
-            });
-        }
+//         if (!JWT_SECRET || JWT_SECRET === 'your_jwt_secret') {
+//             console.error('❌ JWT_SECRET not properly configured! Please set JWT_SECRET environment variable.');
+//             return res.status(500).json({
+//                 success: false,
+//                 message: "Server configuration error - JWT_SECRET not set",
+//                 data: []
+//             });
+//         }
 
-        const jwt = await import('jsonwebtoken');
-        const token = jwt.default.sign(
-            { id: user.id, phone: user.phone, guest: false, employee: true },
-            JWT_SECRET,
-            { expiresIn: '1d' }
-        );
+//         const jwt = await import('jsonwebtoken');
+//         const token = jwt.default.sign(
+//             { id: user.id, phone: user.phone, guest: false, employee: true },
+//             JWT_SECRET,
+//             { expiresIn: '1d' }
+//         );
 
-        console.log('🎫 Token generated:', token.substring(0, 20) + '...');
+//         console.log('🎫 Token generated:', token.substring(0, 20) + '...');
 
-        // Update last login
-        await knex('users')
-            .where({ id: user.id })
-            .update({ last_login: parseInt(Date.now() / 1000) });
+//         // Update last login
+//         await knex('users')
+//             .where({ id: user.id })
+//             .update({ last_login: parseInt(Date.now() / 1000) });
 
-        // Set custom header
-        res.set('X-Auth-Token', token);
+//         // Set custom header
+//         res.set('X-Auth-Token', token);
 
-        res.json({
-            success: true,
-            message: "Successfully logged in!",
-            data: {
-                user: {
-                    id: user.id,
-                    name: user.name,
-                    email: user.email,
-                    phone: user.phone
-                },
-                token: token
-            }
-        });
-    } catch (error) {
-        console.error("Login error:", error);
-        res.status(500).json({
-            success: false,
-            message: "Internal server error",
-            data: []
-        });
-    }
-});
+//         res.json({
+//             success: true,
+//             message: "Successfully logged in!",
+//             data: {
+//                 user: {
+//                     id: user.id,
+//                     name: user.name,
+//                     email: user.email,
+//                     phone: user.phone
+//                 },
+//                 token: token
+//             }
+//         });
+//     } catch (error) {
+//         console.error("Login error:", error);
+//         res.status(500).json({
+//             success: false,
+//             message: "Internal server error",
+//             data: []
+//         });
+//     }
+// });
 
 // 404 handler for undefined routes
 app.use('*', (req, res) => {
