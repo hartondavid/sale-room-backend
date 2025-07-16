@@ -4,6 +4,7 @@ import express from "express"
 import dotenv from 'dotenv'
 import apiRouter from './src/routes/apiRoute.mjs'
 import cors from 'cors'
+import databaseManager from './src/utils/database.mjs'
 
 const app = express();
 
