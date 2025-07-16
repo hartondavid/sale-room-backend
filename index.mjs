@@ -1,29 +1,29 @@
-// app.js
+// app.js - Complete version with database functionality
 
 import express from "express"
 import dotenv from 'dotenv'
-import apiRouter from './src/routes/apiRoute.mjs'
 import cors from 'cors'
 import databaseManager from './src/utils/database.mjs'
-import { readdir } from 'fs/promises'
-import { join } from 'path'
-import { fileURLToPath } from 'url'
-import { dirname } from 'path'
 
 const app = express();
 
-dotenv.config()
+// Load environment variables (but don't crash if .env doesn't exist)
+try {
+    dotenv.config()
+} catch (error) {
+    console.log('No .env file found, using environment variables');
+}
 
-app.set('trust proxy', true);
+// Basic middleware
+app.use(express.json());
 
+// Add CORS for frontend access
 app.use(cors({
-    origin: '*', // Allow any origin
+    origin: '*', // In production, specify your frontend domain
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     exposedHeaders: ['X-Auth-Token']
-
 }));
-
 
 // Run migrations before starting the server
 const runMigrations = async () => {
@@ -60,11 +60,6 @@ const runMigrations = async () => {
         await databaseManager.runSeeds();
         console.log('✅ Seeds completed successfully');
 
-        // Run custom seeds from seeds directory
-        console.log('🌱 Running custom seeds...');
-        await runCustomSeeds();
-        console.log('✅ Custom seeds completed successfully');
-
         // Check data after seeds
         try {
             const users = await knex('users').select('id', 'name', 'email');
@@ -98,61 +93,6 @@ try {
     console.log('🔍 Error:', error.message);
 }
 
-
-// Get current directory for ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Function to run custom seeds from seeds directory
-const runCustomSeeds = async () => {
-    try {
-        console.log('🌱 Running custom seeds from seeds directory...');
-        const knex = await databaseManager.getKnex();
-        const seedsDir = join(__dirname, 'seeds');
-
-        // Read all files from seeds directory
-        const files = await readdir(seedsDir);
-
-        // Filter for .cjs and .js files and sort them
-        const seedFiles = files
-            .filter(file => file.endsWith('.cjs') || file.endsWith('.js'))
-            .sort(); // This will sort alphabetically (01_, 02_, etc.)
-
-        console.log(`📁 Found ${seedFiles.length} seed files:`, seedFiles);
-
-        // Execute each seed file
-        for (const file of seedFiles) {
-            try {
-                console.log(`🌱 Executing seed file: ${file}`);
-                const filePath = join(seedsDir, file);
-
-                // Import the seed file
-                const seedModule = await import(filePath);
-
-                if (seedModule.exports && seedModule.exports.seed) {
-                    await seedModule.exports.seed(knex);
-                    console.log(`✅ Successfully executed: ${file}`);
-                } else if (seedModule.default && seedModule.default.seed) {
-                    await seedModule.default.seed(knex);
-                    console.log(`✅ Successfully executed: ${file}`);
-                } else {
-                    console.log(`⚠️ No seed function found in: ${file}`);
-                }
-            } catch (error) {
-                console.error(`❌ Error executing seed file ${file}:`, error.message);
-                // Continue with other files even if one fails
-            }
-        }
-
-        console.log('✅ Custom seeds completed successfully');
-        return true;
-    } catch (error) {
-        console.error('❌ Custom seeds failed:', error.message);
-        console.error('🔍 Error details:', error.stack);
-        return false;
-    }
-};
-
 // Use API routes if available, otherwise use simplified routes
 if (apiRoutes) {
     app.use('/api', apiRoutes);
@@ -161,16 +101,304 @@ if (apiRoutes) {
     console.log('📡 Using simplified API (no database)');
 }
 
+// Simple test route
+app.get('/test', (req, res) => {
+    console.log('Test route accessed');
+    res.json({
+        message: 'Test route working!',
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || 'production',
+        port: process.env.PORT || 8080,
+        database: apiRoutes ? 'connected' : 'not connected (simplified version)'
+    });
+});
 
-// Serve static files from the 'public' directory
-app.use(express.static('public'));
+// Root route
+app.get('/', (req, res) => {
+    console.log('Root route accessed');
+    res.json({
+        message: 'Delivery Backend API',
+        version: '1.0.0',
+        status: 'running',
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || 'production',
+        port: process.env.PORT || 8080,
+        database: apiRoutes ? 'connected' : 'not connected (simplified version)',
+        endpoints: {
+            test: '/test',
+            health: '/health',
+            api: apiRoutes ? '/api/*' : 'not available (simplified version)'
+        }
+    });
+});
 
-// Middleware to parse x-www-form-urlencoded data
-app.use(express.urlencoded({ extended: true }));
+// Simple health check route
+app.get('/health', (req, res) => {
+    console.log('Health route accessed');
+    res.json({
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || 'production',
+        port: process.env.PORT || 8080,
+        database: apiRoutes ? 'connected' : 'not connected (simplified version)'
+    });
+});
 
-// Other middlewares
-app.use(express.json());
+// Test database endpoint (not protected)
+app.get('/test-db', async (req, res) => {
+    try {
+        console.log('🔍 Testing database connection...');
 
-app.use('/api/', apiRouter)
+        // Test database connection
+        const knex = await databaseManager.getKnex();
+        await knex.raw('SELECT 1');
+        console.log('✅ Database connection successful');
+
+        // Get all users
+        const users = await knex('users').select('id', 'name', 'email', 'phone');
+        console.log('📋 Found users:', users.length);
+
+        res.json({
+            success: true,
+            message: "Database test successful",
+            data: {
+                connection: 'successful',
+                usersCount: users.length,
+                users: users
+            }
+        });
+    } catch (error) {
+        console.error("Database test error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Database test failed",
+            data: {
+                error: error.message,
+                stack: error.stack
+            }
+        });
+    }
+});
+
+// Manual seed endpoint (not protected) - for emergency use
+app.post('/run-seeds', async (req, res) => {
+    try {
+        console.log('🌱 Manually running seeds...');
+
+        // Run seeds
+        await databaseManager.runSeeds();
+        console.log('✅ Manual seeds completed successfully');
+
+        // Get all users after seeding
+        const knex = await databaseManager.getKnex();
+        const users = await knex('users').select('id', 'name', 'email', 'phone');
+        console.log('📋 Users after manual seeding:', users);
+
+        res.json({
+            success: true,
+            message: "Manual seeding completed successfully",
+            data: {
+                usersCount: users.length,
+                users: users
+            }
+        });
+    } catch (error) {
+        console.error("Manual seeding error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Manual seeding failed",
+            data: {
+                error: error.message,
+                stack: error.stack
+            }
+        });
+    }
+});
+
+// Test token endpoint (not protected)
+app.post('/test-token', async (req, res) => {
+    try {
+        const { token } = req.body;
+
+        if (!token) {
+            return res.status(400).json({
+                success: false,
+                message: "Token is required",
+                data: []
+            });
+        }
+
+        console.log('🔍 Testing token:', token.substring(0, 20) + '...');
+
+        // Verify token
+        const JWT_SECRET = process.env.JWT_SECRET;
+
+        if (!JWT_SECRET || JWT_SECRET === 'your_jwt_secret') {
+            console.error('❌ JWT_SECRET not properly configured! Please set JWT_SECRET environment variable.');
+            return res.status(500).json({
+                success: false,
+                message: "Server configuration error - JWT_SECRET not set",
+                data: []
+            });
+        }
+
+        const jwt = await import('jsonwebtoken');
+        const decodedToken = jwt.default.verify(token, JWT_SECRET);
+
+        console.log('✅ Token verified:', decodedToken);
+
+        // Get user from database
+        const knex = await databaseManager.getKnex();
+        const user = await knex('users').where({ id: decodedToken.id }).first();
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found",
+                data: []
+            });
+        }
+
+        res.json({
+            success: true,
+            message: "Token is valid",
+            data: {
+                token: decodedToken,
+                user: {
+                    id: user.id,
+                    name: user.name,
+                    email: user.email,
+                    phone: user.phone
+                }
+            }
+        });
+    } catch (error) {
+        console.error("Token test error:", error);
+        res.status(400).json({
+            success: false,
+            message: "Invalid token",
+            data: {
+                error: error.message
+            }
+        });
+    }
+});
+
+// Login endpoint (not protected)
+app.post('/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({
+                success: false,
+                message: "Email and password are required",
+                data: []
+            });
+        }
+
+        console.log('🔍 Login attempt for:', email);
+
+        // Get user from database
+        const knex = await databaseManager.getKnex();
+        const user = await knex('users').where({ email }).first();
+
+        if (!user) {
+            console.log('❌ User not found:', email);
+            return res.status(401).json({
+                success: false,
+                message: "Invalid credentials",
+                data: []
+            });
+        }
+
+        console.log('✅ User found:', { id: user.id, name: user.name, email: user.email });
+
+        // Hash password for comparison
+        const crypto = await import('crypto');
+        const hashedPassword = crypto.default.createHash('md5').update(password + password).digest('hex');
+        console.log('🔐 Password check:', { provided: hashedPassword, stored: user.password });
+
+        if (hashedPassword !== user.password) {
+            console.log('❌ Password mismatch');
+            return res.status(401).json({
+                success: false,
+                message: "Invalid credentials",
+                data: []
+            });
+        }
+
+        console.log('✅ Password verified successfully');
+
+        // Generate JWT token
+        const JWT_SECRET = process.env.JWT_SECRET;
+
+        if (!JWT_SECRET || JWT_SECRET === 'your_jwt_secret') {
+            console.error('❌ JWT_SECRET not properly configured! Please set JWT_SECRET environment variable.');
+            return res.status(500).json({
+                success: false,
+                message: "Server configuration error - JWT_SECRET not set",
+                data: []
+            });
+        }
+
+        const jwt = await import('jsonwebtoken');
+        const token = jwt.default.sign(
+            { id: user.id, phone: user.phone, guest: false, employee: true },
+            JWT_SECRET,
+            { expiresIn: '1d' }
+        );
+
+        console.log('🎫 Token generated:', token.substring(0, 20) + '...');
+
+        // Update last login
+        await knex('users')
+            .where({ id: user.id })
+            .update({ last_login: parseInt(Date.now() / 1000) });
+
+        // Set custom header
+        res.set('X-Auth-Token', token);
+
+        res.json({
+            success: true,
+            message: "Successfully logged in!",
+            data: {
+                user: {
+                    id: user.id,
+                    name: user.name,
+                    email: user.email,
+                    phone: user.phone
+                },
+                token: token
+            }
+        });
+    } catch (error) {
+        console.error("Login error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Internal server error",
+            data: []
+        });
+    }
+});
+
+// 404 handler for undefined routes
+app.use('*', (req, res) => {
+    console.log('404 route accessed:', req.originalUrl);
+    res.status(404).json({
+        error: 'Route not found',
+        message: `Cannot ${req.method} ${req.originalUrl}`,
+        availableRoutes: {
+            root: '/',
+            test: '/test',
+            health: '/health',
+            testDb: '/test-db',
+            runSeeds: '/run-seeds',
+            testToken: '/test-token',
+            login: '/login',
+            api: apiRoutes ? '/api/*' : 'not available (simplified version)'
+        }
+    });
+});
 
 export default app;
