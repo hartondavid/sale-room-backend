@@ -15,6 +15,7 @@ app.use(cors({
     origin: '*', // Allow any origin
     exposedHeaders: ['X-Auth-Token', 'X-Message', 'Content-Disposition'], // Expose the custom header
 
+
 }));
 // Serve static files from the 'public' directory
 app.use(express.static('public'));

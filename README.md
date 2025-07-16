@@ -1,8 +1,5 @@
 # Sale Room Backend
 
-<div align="center">
-  <img src="database diagram.jpg" alt="Sale Room Backend Database Diagram" width="600" height="400" style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
-</div>
 
 A comprehensive e-commerce backend API built with Node.js, Express, and MySQL. This application provides a complete solution for managing online sales, auctions, and user transactions.
 
@@ -29,13 +26,15 @@ A comprehensive e-commerce backend API built with Node.js, Express, and MySQL. T
 
 ## 🗄️ Database Structure
 
+<div align="center">
+  <img src="database diagram.jpg" alt="Sale Room Backend Database Diagram" width="600" height="400" style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+</div>
+
 ### Core Tables
 
 **Users Table**
 - User authentication and profile information
 - Fields: id, name, email, password, phone, last_login, photo, timestamps
-
-
 
 
 **Products Table**

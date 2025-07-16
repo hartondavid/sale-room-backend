@@ -13,19 +13,19 @@ router.post('/createPayment', userAuthMiddleware, async (req, res) => {
   }
 
   try {
-    const [id] = await db('payments').insert({
+    const [id] = await (await db.getKnex())('payments').insert({
       order_id,
       payment_method,
       status: 'completed',
     });
 
 
-    await db('orders').where('id', order_id).update({
+    await (await db.getKnex())('orders').where('id', order_id).update({
       is_paid: true,
       // is_delivered: true,
     });
 
-    await db('products')
+    await (await db.getKnex())('products')
       .join('order_items', 'products.id', 'order_items.product_id')
       .where('order_items.order_id', order_id)
       .update({
@@ -45,7 +45,7 @@ router.post('/createPayment', userAuthMiddleware, async (req, res) => {
 router.get('/getPaymentsByCustomerId', userAuthMiddleware, async (req, res) => {
   try {
     // Get all payments for the user's orders
-    const payments = await db('payments')
+    const payments = await (await db.getKnex())('payments')
       .join('orders', 'payments.order_id', 'orders.id')
       .select('payments.*', 'orders.id', 'orders.total', 'orders.is_paid', 'orders.is_delivered');
 
@@ -53,7 +53,7 @@ router.get('/getPaymentsByCustomerId', userAuthMiddleware, async (req, res) => {
     // For each payment, get the order and its products
     const results = await Promise.all(payments.map(async payment => {
       // Get order items for this order
-      const orderItems = await db('order_items')
+      const orderItems = await (await db.getKnex())('order_items')
         .where('order_id', payment.order_id)
         .join('products', 'order_items.product_id', 'products.id')
         .where('products.current_user_id', req.user.id)
@@ -89,7 +89,7 @@ router.get('/getPaymentsByCustomerId', userAuthMiddleware, async (req, res) => {
 router.get('/getPaymentsBySellerId', userAuthMiddleware, async (req, res) => {
   try {
     // Get all payments for the user's orders
-    const products = await db('products')
+    const products = await (await db.getKnex())('products')
       .where('products.user_id', req.user.id)
       .select('*');
 
@@ -103,7 +103,7 @@ router.get('/getPaymentsBySellerId', userAuthMiddleware, async (req, res) => {
 router.get('/getPaymentsByMonth', userAuthMiddleware, async (req, res) => {
   try {
 
-    const products = await db('products')
+    const products = await (await db.getKnex())('products')
       .join('users', 'products.user_id', 'users.id')
       .where('products.user_id', req.user.id)
       .select('products.created_at', 'products.current_price');

@@ -1,14 +1,14 @@
 import { Router } from "express";
-import { userAuthMiddleware } from "../utils/middlewares/userAuthMiddleware.mjs";   
+import { userAuthMiddleware } from "../utils/middlewares/userAuthMiddleware.mjs";
 import db from "../utils/database.mjs";
 import { sendJsonResponse } from "../utils/utilFunctions.mjs";
 
 const router = Router();
 
-router.get('/getUserRights',userAuthMiddleware, async (req, res) => {
+router.get('/getUserRights', userAuthMiddleware, async (req, res) => {
     try {
-        const userRights = await db('user_rights')
-            .join('rights', 'user_rights.right_id', 'rights.id')       
+        const userRights = await (await db.getKnex())('user_rights')
+            .join('rights', 'user_rights.right_id', 'rights.id')
             .where({ user_id: req.user.id })
             .select(
                 'user_rights.*',
@@ -17,7 +17,7 @@ router.get('/getUserRights',userAuthMiddleware, async (req, res) => {
 
             );
 
-    
+
         if (!userRights) {
             req.userRights = [];
             return sendJsonResponse(res, false, 404, 'User rights not found', []);
@@ -28,8 +28,8 @@ router.get('/getUserRights',userAuthMiddleware, async (req, res) => {
         console.error(err);
         return sendJsonResponse(res, false, 422, 'Internal server error', []);
     }
-  })
-  
+})
+
 
 
 
