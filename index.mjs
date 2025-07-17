@@ -76,6 +76,57 @@ const runMigrations = async () => {
     }
 };
 
+// Function to run seed files
+const runSeeds = async (options = {}) => {
+    try {
+        console.log('🌱 Starting seed execution...');
+
+        // Get database connection
+        const knex = await databaseManager.getKnex();
+
+        // Default options
+        const seedOptions = {
+            specific: options.specific,
+            directory: options.directory || './seeds',
+            loadExtensions: options.loadExtensions || ['.js', '.cjs'],
+            recursive: options.recursive !== false
+        };
+
+        if (options.specific) {
+            console.log(`📦 Running specific seed: ${options.specific}`);
+            await knex.seed.run({ specific: options.specific });
+            console.log(`✅ Seed ${options.specific} completed successfully`);
+        } else {
+            console.log('📦 Running all seeds...');
+            await knex.seed.run(seedOptions);
+            console.log('✅ All seeds completed successfully');
+        }
+
+        // Verify seed data if requested
+        if (options.verify) {
+            console.log('🔍 Verifying seed data...');
+            try {
+                const users = await knex('users').select('id', 'name', 'email');
+                const rights = await knex('rights').select('id', 'name', 'right_code');
+                const userRights = await knex('user_rights').select('*');
+
+                console.log('👥 Users seeded:', users.length);
+                console.log('🔐 Rights seeded:', rights.length);
+                console.log('🔗 User rights seeded:', userRights.length);
+            } catch (error) {
+                console.log('⚠️ Could not verify seed data:', error.message);
+            }
+        }
+
+        return true;
+    } catch (error) {
+        console.error('❌ Seed execution failed:', error.message);
+        console.error('🔍 Error details:', error.stack);
+        return false;
+    }
+};
+
+
 // Import API routes (with error handling)
 let apiRoutes = null;
 try {
