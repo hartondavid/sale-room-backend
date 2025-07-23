@@ -1,5 +1,5 @@
 import { Router } from "express";
-import db from "../utils/database.mjs";
+import databaseManager from "../utils/database.mjs";
 import bcrypt from "bcrypt";
 import { getAuthToken, md5Hash, sendJsonResponse } from "../utils/utilFunctions.mjs";
 import { userAuthMiddleware } from "../utils/middlewares/userAuthMiddleware.mjs";
@@ -17,7 +17,7 @@ router.post('/login', async (req, res) => {
       return sendJsonResponse(res, false, 400, "Email and password are required", []);
     }
     // Fetch user from database
-    const user = await (await db.getKnex())('users').where({ email }).first();
+    const user = await (await databaseManager.getKnex())('users').where({ email }).first();
 
     if (!user) {
       return sendJsonResponse(res, false, 401, "Invalid credentials", []);
@@ -33,7 +33,7 @@ router.post('/login', async (req, res) => {
     // Generate JWT token
     const token = getAuthToken(user.id, user.email, false, '1d', true)
 
-    await (await db.getKnex())('users')
+    await (await databaseManager.getKnex())('users')
       .where({ id: user.id })
       .update({ last_login: parseInt(Date.now() / 1000) });
 
@@ -55,7 +55,7 @@ router.get('/checkLogin', userAuthMiddleware, async (req, res) => {
 // Get customer profile
 router.get('/profile/:userId', async (req, res) => {
   try {
-    const user = await (await db.getKnex())('users').where({ id: req.params.userId }).first();
+    const user = await (await databaseManager.getKnex())('users').where({ id: req.params.userId }).first();
     if (!user) return sendJsonResponse(res, false, 404, "User not found", []);
 
     return sendJsonResponse(res, true, 200, "User fetched successfully", { id: user.id, name: user.name, email: user.email, created_at: user.created_at });
@@ -71,7 +71,7 @@ router.put('updatePassword/:userId', async (req, res) => {
 
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
-    await (await db.getKnex())('users').where({ id: req.params.userId }).update({ password: hashedPassword });
+    await (await databaseManager.getKnex())('users').where({ id: req.params.userId }).update({ password: hashedPassword });
     return sendJsonResponse(res, true, 200, "Password updated", []);
   } catch (err) {
     return sendJsonResponse(res, false, 500, "Failed to update password", { details: err.message });
@@ -139,16 +139,16 @@ router.post('/register', async (req, res) => {
 
     let newUserId;
     // let rightCode;
-    const userEmail = await (await db.getKnex())('users').where('email', email).first();
+    const userEmail = await (await databaseManager.getKnex())('users').where('email', email).first();
     if (!userEmail) {
       // Insert the new user into the database
-      [newUserId] = await (await db.getKnex())('users')
+      [newUserId] = await (await databaseManager.getKnex())('users')
         .insert(userData)
         .returning('id');
 
-      const rightCode = await (await db.getKnex())('rights').where('right_code', right_code).first();
+      const rightCode = await (await databaseManager.getKnex())('rights').where('right_code', right_code).first();
 
-      await (await db.getKnex())('user_rights')
+      await (await databaseManager.getKnex())('user_rights')
 
         .where({ user_id: newUserId })
         .insert({
@@ -174,7 +174,7 @@ router.get('/getUsers', userAuthMiddleware, async (req, res) => {
 
     const userId = req.user.id;
 
-    const userRights = await (await db.getKnex())('user_rights')
+    const userRights = await (await databaseManager.getKnex())('user_rights')
       .join('rights', 'user_rights.right_id', 'rights.id')
       .where('rights.right_code', 3)
       .where('user_rights.user_id', userId)
@@ -184,7 +184,7 @@ router.get('/getUsers', userAuthMiddleware, async (req, res) => {
       return sendJsonResponse(res, false, 403, "Nu sunteti autorizat!", []);
     }
 
-    const users = await (await db.getKnex())('users').
+    const users = await (await databaseManager.getKnex())('users').
       join('user_rights', 'users.id', 'user_rights.user_id')
       .join('rights', 'user_rights.right_id', 'rights.id')
       .whereNot('users.id', userId)
@@ -206,7 +206,7 @@ router.delete('/deleteUser/:userId', userAuthMiddleware, async (req, res) => {
 
     const loggedUserId = req.user.id;
 
-    const userRights = await (await db.getKnex())('user_rights')
+    const userRights = await (await databaseManager.getKnex())('user_rights')
       .join('rights', 'user_rights.right_id', 'rights.id')
       .where('rights.right_code', 3)
       .where('user_rights.user_id', loggedUserId)
@@ -216,9 +216,9 @@ router.delete('/deleteUser/:userId', userAuthMiddleware, async (req, res) => {
       return sendJsonResponse(res, false, 403, "Nu sunteti autorizat!", []);
     }
 
-    const user = await db('users').where({ id: userId }).first();
+    const user = await (await databaseManager.getKnex())('users').where({ id: userId }).first();
     if (!user) return sendJsonResponse(res, false, 404, "Utilizatorul nu există!", []);
-    await db('users').where({ id: userId }).del();
+    await (await databaseManager.getKnex())('users').where({ id: userId }).del();
     return sendJsonResponse(res, true, 200, "Utilizatorul a fost șters cu succes!", []);
   } catch (error) {
     return sendJsonResponse(res, false, 500, "Eroare la ștergerea ingredientului!", { details: error.message });
