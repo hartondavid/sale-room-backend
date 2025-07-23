@@ -137,6 +137,17 @@ router.post('/register', async (req, res) => {
       return sendJsonResponse(res, false, 400, "Dreptul este obligatoriu", null);
     }
 
+    console.log('🔍 right_code received:', right_code);
+    console.log('🔍 right_code type:', typeof right_code);
+
+    // Convert right_code to number if it's a string
+    const numericRightCode = parseInt(right_code, 10);
+    console.log('🔍 numericRightCode:', numericRightCode);
+
+    if (isNaN(numericRightCode)) {
+      return sendJsonResponse(res, false, 400, "Dreptul trebuie să fie un număr valid", null);
+    }
+
     let newUserId;
     // let rightCode;
     const userEmail = await (await databaseManager.getKnex())('users').where('email', email).first();
@@ -146,11 +157,21 @@ router.post('/register', async (req, res) => {
         .insert(userData)
         .returning('id');
 
-      const rightCode = await (await databaseManager.getKnex())('rights').where('right_code', right_code).first();
+      // Check what rights exist in the database
+      const allRights = await (await databaseManager.getKnex())('rights').select('*');
+      console.log('🔍 All rights in database:', allRights);
+
+      const rightCode = await (await databaseManager.getKnex())('rights').where('right_code', numericRightCode).first();
+
+      console.log('🔍 rightCode found:', rightCode);
+      console.log('🔍 rightCode.id type:', typeof rightCode?.id);
+      console.log('🔍 rightCode.id value:', rightCode?.id);
+
+      if (!rightCode) {
+        return sendJsonResponse(res, false, 400, "Dreptul nu a fost găsit", null);
+      }
 
       await (await databaseManager.getKnex())('user_rights')
-
-        .where({ user_id: newUserId })
         .insert({
           user_id: newUserId,
           right_id: rightCode.id
