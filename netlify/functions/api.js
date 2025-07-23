@@ -19,7 +19,7 @@ app.use(cors({
 }));
 
 // Import your routes
-import('./src/routes/apiRoute.mjs').then(({ default: apiRoutes }) => {
+import('../../src/routes/apiRoute.mjs').then(({ default: apiRoutes }) => {
     app.use('/api', apiRoutes);
     console.log('✅ API routes loaded successfully');
 }).catch(error => {
@@ -30,7 +30,7 @@ import('./src/routes/apiRoute.mjs').then(({ default: apiRoutes }) => {
 app.get('/api/test-db', async (req, res) => {
     try {
         // Import database test utility
-        const { testDatabaseConnection } = await import('./src/utils/databaseTest.mjs');
+        const { testDatabaseConnection } = await import('../../src/utils/databaseTest.mjs');
 
         const result = await testDatabaseConnection();
 
@@ -55,8 +55,8 @@ app.get('/api/simple-db-test', async (req, res) => {
     try {
         console.log('🔍 Testing simple database connection...');
 
-        // Import database manager
-        const { default: databaseManager } = await import('./src/utils/database.mjs');
+        // Import database manager with correct path
+        const { default: databaseManager } = await import('../../src/utils/database.mjs');
 
         // Test database connection
         const knex = await databaseManager.getKnex();
