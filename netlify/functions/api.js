@@ -19,7 +19,7 @@ app.use(cors({
 }));
 
 // Import your routes
-import('../../src/routes/apiRoute.mjs').then(({ default: apiRoutes }) => {
+import('./src/routes/apiRoute.mjs').then(({ default: apiRoutes }) => {
     app.use('/api', apiRoutes);
     console.log('✅ API routes loaded successfully');
 }).catch(error => {
@@ -29,106 +29,16 @@ import('../../src/routes/apiRoute.mjs').then(({ default: apiRoutes }) => {
 // Database test endpoint
 app.get('/api/test-db', async (req, res) => {
     try {
-        console.log('🔍 Testing database connection...');
+        // Import database test utility
+        const { testDatabaseConnection } = await import('./src/utils/databaseTest.mjs');
 
-        // Direct database connection test
-        const knex = require('knex')({
-            client: 'pg',
-            connection: process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL,
-            ssl: { rejectUnauthorized: false },
-            pool: {
-                min: 0,
-                max: 1,
-                acquireTimeoutMillis: 30000,
-                createTimeoutMillis: 30000,
-                destroyTimeoutMillis: 5000,
-                idleTimeoutMillis: 30000,
-                reapIntervalMillis: 1000,
-                createRetryIntervalMillis: 100
-            }
-        });
+        const result = await testDatabaseConnection();
 
-        // Test basic connection
-        await knex.raw('SELECT 1');
-        console.log('✅ Basic connection test passed');
-
-        // Get database information
-        const dbInfo = await knex.raw('SELECT current_database() as db_name, version() as version');
-        console.log('📊 Database info:', dbInfo.rows[0]);
-
-        // Test table existence
-        const tables = await knex.raw(`
-            SELECT table_name 
-            FROM information_schema.tables 
-            WHERE table_schema = 'public'
-            ORDER BY table_name
-        `);
-
-        console.log('📋 Available tables:', tables.rows.map(row => row.table_name));
-
-        await knex.destroy();
-
-        res.json({
-            success: true,
-            message: "Database connection successful",
-            data: {
-                database: dbInfo.rows[0].db_name,
-                version: dbInfo.rows[0].version,
-                tables: tables.rows.map(row => row.table_name),
-                environment: process.env.NODE_ENV || 'production'
-            }
-        });
-    } catch (error) {
-        console.error('❌ Database connection test failed:', error);
-        res.status(500).json({
-            success: false,
-            message: "Database connection failed",
-            error: error.message,
-            stack: error.stack
-        });
-    }
-});
-
-// Simple database test endpoint
-app.get('/api/simple-db-test', async (req, res) => {
-    try {
-        console.log('🔍 Testing simple database connection...');
-
-        // Direct database connection test
-        const knex = require('knex')({
-            client: 'pg',
-            connection: process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL,
-            ssl: { rejectUnauthorized: false },
-            pool: {
-                min: 0,
-                max: 1,
-                acquireTimeoutMillis: 30000,
-                createTimeoutMillis: 30000,
-                destroyTimeoutMillis: 5000,
-                idleTimeoutMillis: 30000,
-                reapIntervalMillis: 1000,
-                createRetryIntervalMillis: 100
-            }
-        });
-
-        // Test database connection
-        await knex.raw('SELECT 1');
-        console.log('✅ Database connection successful');
-
-        // Get database info
-        const dbInfo = await knex.raw('SELECT current_database() as db_name, version() as version');
-
-        await knex.destroy();
-
-        res.json({
-            success: true,
-            message: "Database connection successful",
-            data: {
-                database: dbInfo.rows[0].db_name,
-                version: dbInfo.rows[0].version,
-                environment: process.env.NODE_ENV || 'production'
-            }
-        });
+        if (result.success) {
+            res.json(result);
+        } else {
+            res.status(500).json(result);
+        }
     } catch (error) {
         console.error("Database test error:", error);
         res.status(500).json({
