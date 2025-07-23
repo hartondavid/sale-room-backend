@@ -153,9 +153,34 @@ router.post('/register', async (req, res) => {
     const userEmail = await (await databaseManager.getKnex())('users').where('email', email).first();
     if (!userEmail) {
       // Insert the new user into the database
-      [newUserId] = await (await databaseManager.getKnex())('users')
+      const insertResult = await (await databaseManager.getKnex())('users')
         .insert(userData)
         .returning('id');
+
+      console.log('🔍 Insert result:', insertResult);
+
+      // Extract the user ID properly
+      let newUserId;
+      if (Array.isArray(insertResult) && insertResult.length > 0) {
+        newUserId = typeof insertResult[0] === 'object' ? insertResult[0].id : insertResult[0];
+      } else if (typeof insertResult === 'object' && insertResult.id) {
+        newUserId = insertResult.id;
+      } else {
+        newUserId = insertResult;
+      }
+
+      console.log('🔍 Extracted newUserId:', newUserId);
+      console.log('🔍 newUserId type:', typeof newUserId);
+
+      // Ensure newUserId is a number
+      if (typeof newUserId === 'string') {
+        newUserId = parseInt(newUserId, 10);
+      }
+
+      if (typeof newUserId !== 'number' || isNaN(newUserId)) {
+        console.error('❌ Invalid newUserId:', newUserId);
+        return sendJsonResponse(res, false, 500, "Eroare la crearea utilizatorului - ID invalid", null);
+      }
 
       // Check what rights exist in the database
       const allRights = await (await databaseManager.getKnex())('rights').select('*');
