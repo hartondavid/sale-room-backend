@@ -2,7 +2,8 @@ import { Router } from "express";
 import databaseManager from "../utils/database.mjs";
 import { userAuthMiddleware } from "../utils/middlewares/userAuthMiddleware.mjs";
 import { sendJsonResponse } from "../utils/utilFunctions.mjs";
-import createMulter from "../utils/uploadUtils.mjs";
+import createMulter, { smartUpload, deleteFromBlob } from "../utils/uploadUtils.mjs";
+
 
 const upload = createMulter('public/uploads/products', ['image/jpeg', 'image/png', 'image/gif', 'application/pdf']);
 
