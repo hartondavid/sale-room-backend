@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sale Room Backend API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+
+        .status {
+            background: #e8f5e8;
+            border: 1px solid #4caf50;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+
+        .endpoints {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+
+        .endpoint {
+            margin: 10px 0;
+            padding: 10px;
+            background: white;
+            border-left: 4px solid #007bff;
+        }
+
+        code {
+            background: #f1f1f1;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🚀 Sale Room Backend API</h1>
+
+        <div class="status">
+            <h3>✅ API Status: Running</h3>
+            <p>Your backend API is successfully deployed on Netlify!</p>
+        </div>
+
+        <div class="endpoints">
+            <h3>📡 Available Endpoints</h3>
+            <div class="endpoint">
+                <strong>Health Check:</strong> <code>/api/health</code>
+            </div>
+            <div class="endpoint">
+                <strong>Users:</strong> <code>/api/users/*</code>
+            </div>
+            <div class="endpoint">
+                <strong>Products:</strong> <code>/api/products/*</code>
+            </div>
+            <div class="endpoint">
+                <strong>Orders:</strong> <code>/api/orders/*</code>
+            </div>
+            <div class="endpoint">
+                <strong>Payments:</strong> <code>/api/payments/*</code>
+            </div>
+        </div>
+
+        <div class="endpoints">
+            <h3>🔧 API Base URL</h3>
+            <p>Use this URL as your API base in your frontend application:</p>
+            <code id="apiUrl">Loading...</code>
+        </div>
+    </div>
+
+    <script>
+        // Display the current API URL
+        const apiUrl = window.location.origin + '/api';
+        document.getElementById('apiUrl').textContent = apiUrl;
+    </script>
+</body>
+
+</html>
