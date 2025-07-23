@@ -1,9 +1,9 @@
 // knexfile.js
-require('dotenv').config();
+require('dotenv').config({ path: './.env.local' });
 
 // This is the base configuration that will be shared
 const baseConfig = {
-    client: 'pg', // PostgreSQL for Neon database
+    client: 'pg', // Changed from 'mysql2' to 'pg' for PostgreSQL
     migrations: {
         directory: './migrations'
     },
@@ -17,26 +17,21 @@ module.exports = {
     // Used when you run your app locally
     development: {
         ...baseConfig,
-        connection: process.env.DATABASE_URL || process.env.NETLIFY_DATABASE_URL,
+        connection: process.env.DATABASE_URL, // Reads the connection string from your .env.local file
     },
 
     // --- Production Environment ---
-    // Used by Netlify when you deploy
+    // Used by Vercel when you deploy
     production: {
         ...baseConfig,
-        connection: process.env.DATABASE_URL || process.env.NETLIFY_DATABASE_URL,
-        // SSL is required for connecting to Neon from Netlify
+        connection: process.env.DATABASE_URL,
+        // SSL is required for connecting to Supabase from a cloud environment like Vercel
         ssl: { rejectUnauthorized: false },
-        // Optimized pool config for serverless environment
+        // The connection pool is managed by Supabase's PgBouncer, 
+        // so we use a minimal pool config on the client-side.
         pool: {
-            min: 0, // Start with 0 connections
-            max: 1, // Maximum 1 connection per function instance
-            acquireTimeoutMillis: 30000,
-            createTimeoutMillis: 30000,
-            destroyTimeoutMillis: 5000,
-            idleTimeoutMillis: 30000,
-            reapIntervalMillis: 1000,
-            createRetryIntervalMillis: 100
+            min: 2,
+            max: 10
         }
     }
 };
