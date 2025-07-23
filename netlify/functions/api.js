@@ -50,6 +50,42 @@ app.get('/api/test-db', async (req, res) => {
     }
 });
 
+// Simple database test endpoint
+app.get('/api/simple-db-test', async (req, res) => {
+    try {
+        console.log('🔍 Testing simple database connection...');
+
+        // Import database manager
+        const { default: databaseManager } = await import('./src/utils/database.mjs');
+
+        // Test database connection
+        const knex = await databaseManager.getKnex();
+        await knex.raw('SELECT 1');
+        console.log('✅ Database connection successful');
+
+        // Get database info
+        const dbInfo = await knex.raw('SELECT current_database() as db_name, version() as version');
+
+        res.json({
+            success: true,
+            message: "Database connection successful",
+            data: {
+                database: dbInfo.rows[0].db_name,
+                version: dbInfo.rows[0].version,
+                environment: process.env.NODE_ENV || 'production'
+            }
+        });
+    } catch (error) {
+        console.error("Database test error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Database connection failed",
+            error: error.message,
+            environment: process.env.NODE_ENV || 'production'
+        });
+    }
+});
+
 // Database setup endpoint (redirects to migrate function)
 app.post('/api/setup-db', async (req, res) => {
     try {
