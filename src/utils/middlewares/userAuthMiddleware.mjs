@@ -8,39 +8,39 @@ export const userAuthMiddleware = async (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
 
-    // Check if JWT_SECRET is properly configured
-    if (!JWT_SECRET || JWT_SECRET === 'your_jwt_secret') {
-        console.error('❌ JWT_SECRET not properly configured! Please set JWT_SECRET environment variable.');
-        return res.status(500).json({ error: 'Server configuration error - JWT_SECRET not set' });
-    }
+    console.log('🔍 Auth middleware - Token received:', token ? token.substring(0, 20) + '...' : 'none');
+    console.log('🔍 Auth middleware - JWT_SECRET configured:', JWT_SECRET !== 'your_jwt_secret');
 
     if (!token) {
+        console.log('❌ Auth middleware - No token provided');
         return res.status(422).json({ error: 'Missing Auth Token' });
     }
 
     try {
+        console.log('🔍 Auth middleware - Verifying token...');
         const decodedToken = jwt.verify(token, JWT_SECRET);
         const userId = decodedToken.id;
+        console.log('✅ Auth middleware - Token verified, user ID:', userId);
 
         // Fetch the user from the database based on the ID from the token
-        const user = await (await db.getKnex())('users').where({ id: userId }).first();
+        console.log('🔍 Auth middleware - Fetching user from database...');
+        const dbInstance = await db();
+        const user = await dbInstance('users').where({ id: userId }).first();
 
         if (!user) {
+            console.log('❌ Auth middleware - User not found in database for ID:', userId);
             return res.status(404).json({ error: 'User not found' });
         }
+
+        console.log('✅ Auth middleware - User found:', { id: user.id, name: user.name, email: user.email });
 
         // Attach the user to the request object
         req.user = user;
         req.token = token;
         next();
     } catch (err) {
-        console.error(err);
-        if (err.name === 'JsonWebTokenError') {
-            return res.status(422).json({ error: 'Invalid token format' });
-        } else if (err.name === 'TokenExpiredError') {
-            return res.status(422).json({ error: 'Token expired' });
-        } else {
-            return res.status(422).json({ error: 'Invalid token' });
-        }
+        console.error('❌ Auth middleware - Token verification failed:', err.message);
+        console.error('🔍 Auth middleware - Error details:', err.stack);
+        return res.status(422).json({ error: 'Invalid token' });
     }
 };

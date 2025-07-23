@@ -13,15 +13,17 @@ class DatabaseManager {
         try {
             if (!this.knex) {
                 console.log('🔌 Connecting to database...');
+
+                // Select the correct environment configuration
+                const environment = process.env.NODE_ENV || 'production';
+                const config = knexConfig[environment];
+
                 console.log('📊 Database config:', {
-                    host: knexConfig.connection.host,
-                    user: knexConfig.connection.user,
-                    database: knexConfig.connection.database,
-                    port: knexConfig.connection.port,
-                    ssl: knexConfig.connection.ssl
+                    environment,
+                    connection: config.connection
                 });
 
-                this.knex = knex(knexConfig);
+                this.knex = knex(config);
 
                 // Test the connection
                 await this.knex.raw('SELECT 1');
@@ -30,13 +32,10 @@ class DatabaseManager {
 
                 // Check if database exists
                 try {
-                    const databases = await this.knex.raw('SHOW DATABASES');
-                    console.log('📋 Available databases:', databases[0].map(db => db.Database));
-
-                    const currentDb = await this.knex.raw('SELECT DATABASE() as current_db');
-                    console.log('🎯 Current database:', currentDb[0][0].current_db);
+                    const currentDb = await this.knex.raw('SELECT current_database() as current_db');
+                    console.log('🎯 Current database:', currentDb.rows[0].current_db);
                 } catch (dbError) {
-                    console.log('⚠️ Could not check databases:', dbError.message);
+                    console.log('⚠️ Could not check database:', dbError.message);
                 }
             }
             return this.knex;
@@ -120,6 +119,14 @@ class DatabaseManager {
 // Create a singleton instance
 const databaseManager = new DatabaseManager();
 
+// Create a db function that returns the knex instance directly
+const db = () => {
+    return databaseManager.getKnex();
+};
+
+// Export both the function and the manager for flexibility
+export { databaseManager };
+
 // Graceful shutdown handling
 process.on('SIGINT', async () => {
     console.log('\n🔄 Shutting down gracefully...');
@@ -133,4 +140,4 @@ process.on('SIGTERM', async () => {
     process.exit(0);
 });
 
-export default databaseManager;
+export default db;
