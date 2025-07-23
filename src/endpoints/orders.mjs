@@ -17,7 +17,7 @@ router.post('/createOrder', userAuthMiddleware, async (req, res) => {
   try {
     // Get all product prices
     const productIds = items.map(item => item.product_id);
-    const products = await (await db.getKnex())('products').whereIn('id', productIds);
+    const products = await (await databaseManager.getKnex())('products').whereIn('id', productIds);
 
     // Create a map of product prices
     const productPrices = products.reduce((map, product) => {
@@ -35,7 +35,7 @@ router.post('/createOrder', userAuthMiddleware, async (req, res) => {
     }
 
     // Insert order
-    const [order_id] = await (await db.getKnex())('orders').insert({
+    const [order_id] = await (await databaseManager.getKnex())('orders').insert({
       user_id: req.user.id,
       country,
       city,
@@ -52,7 +52,7 @@ router.post('/createOrder', userAuthMiddleware, async (req, res) => {
 
     // Insert order items with prices from database
     for (const item of items) {
-      await (await db.getKnex())('order_items').insert({
+      await (await databaseManager.getKnex())('order_items').insert({
         order_id,
         product_id: item.product_id,
         quantity: item.quantity,
@@ -69,7 +69,7 @@ router.post('/createOrder', userAuthMiddleware, async (req, res) => {
 // Get all orders for the authenticated customer
 router.get('/getOrders', userAuthMiddleware, async (req, res) => {
   try {
-    const orders = await (await db.getKnex())('orders').where({ user_id: req.user.id });
+    const orders = await (await databaseManager.getKnex())('orders').where({ user_id: req.user.id });
     if (orders.length === 0) {
       return sendJsonResponse(res, true, 200, "Orders fetched successfully", []);
     }
@@ -77,7 +77,7 @@ router.get('/getOrders', userAuthMiddleware, async (req, res) => {
     // For each payment, get the order and its products
     const results = await Promise.all(orders.map(async order => {
       // Get order items for this order
-      const orderItems = await (await db.getKnex())('order_items')
+      const orderItems = await (await databaseManager.getKnex())('order_items')
         .where('order_id', order.id)
         .join('products', 'order_items.product_id', 'products.id')
         .where('products.current_user_id', req.user.id)
@@ -112,10 +112,10 @@ router.get('/getOrders', userAuthMiddleware, async (req, res) => {
 // Get order by id (with items)
 router.get('/getOrder/:orderId', userAuthMiddleware, async (req, res) => {
   try {
-    const order = await (await db.getKnex())('orders').where({ id: req.params.orderId }).first();
+    const order = await (await databaseManager.getKnex())('orders').where({ id: req.params.orderId }).first();
     if (!order) return sendJsonResponse(res, false, 404, "Order not found", []);
 
-    const items = await (await db.getKnex())('order_items').where({ order_id: order.id });
+    const items = await (await databaseManager.getKnex())('order_items').where({ order_id: order.id });
     return sendJsonResponse(res, true, 200, "Order fetched successfully", { ...order, items });
   } catch (err) {
     return sendJsonResponse(res, false, 500, "Failed to get order", { details: err.message });
@@ -126,7 +126,7 @@ router.get('/getOrder/:orderId', userAuthMiddleware, async (req, res) => {
 router.put('/updateStatus/:orderId', userAuthMiddleware, async (req, res) => {
   const { is_paid, is_delivered } = req.body;
   try {
-    await (await db.getKnex())('orders').where({ id: req.params.orderId }).update({
+    await (await databaseManager.getKnex())('orders').where({ id: req.params.orderId }).update({
       is_paid,
       is_delivered
     });

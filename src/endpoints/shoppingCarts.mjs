@@ -8,10 +8,10 @@ const router = Router();
 // Get user cart (with items)
 router.get('/getCartItems/:cartId', userAuthMiddleware, async (req, res) => {
   try {
-    const cart = await (await db.getKnex())('shopping_carts').where({ id: req.params.cartId }).first();
+    const cart = await (await databaseManager.getKnex())('shopping_carts').where({ id: req.params.cartId }).first();
     if (!cart) return sendJsonResponse(res, false, 404, "Cart not found", []);
 
-    const items = await (await db.getKnex())('cart_items')
+    const items = await (await databaseManager.getKnex())('cart_items')
       .leftJoin('products', 'cart_items.product_id', 'products.id')
       .select('cart_items.*', 'products.*')
 
@@ -34,11 +34,11 @@ router.post('/createCart', userAuthMiddleware, async (req, res) => {
   try {
 
     // Create new cart
-    const [cart_id] = await (await db.getKnex())('shopping_carts').insert({
+    const [cart_id] = await (await databaseManager.getKnex())('shopping_carts').insert({
       user_id,
     });
 
-    const cart = await (await db.getKnex())('shopping_carts').where({ id: cart_id }).first();
+    const cart = await (await databaseManager.getKnex())('shopping_carts').where({ id: cart_id }).first();
     return sendJsonResponse(res, true, 201, "Cart created successfully", cart);
   } catch (err) {
     return sendJsonResponse(res, false, 500, "Failed to create cart", { details: err.message });
@@ -53,18 +53,18 @@ router.post('/addCartProduct/:cartId', userAuthMiddleware, async (req, res) => {
   try {
 
     // Find or create cart
-    let cart = await (await db.getKnex())('shopping_carts').where({ id: req.params.cartId }).first();
+    let cart = await (await databaseManager.getKnex())('shopping_carts').where({ id: req.params.cartId }).first();
     if (!cart) {
-      const [cart_id] = await (await db.getKnex())('shopping_carts').insert({ id: req.params.cartId, total: 0 });
-      cart = await (await db.getKnex())('shopping_carts').where({ id: cart_id }).first();
+      const [cart_id] = await (await databaseManager.getKnex())('shopping_carts').insert({ id: req.params.cartId, total: 0 });
+      cart = await (await databaseManager.getKnex())('shopping_carts').where({ id: cart_id }).first();
     }
 
     // Check if item already in cart
-    const existing = await (await db.getKnex())('cart_items').where({ cart_id: cart.id, product_id }).first();
+    const existing = await (await databaseManager.getKnex())('cart_items').where({ cart_id: cart.id, product_id }).first();
 
     if (!existing) {
       // Add new item
-      await (await db.getKnex())('cart_items').insert({ cart_id: cart.id, product_id, quantity: 1 });
+      await (await databaseManager.getKnex())('cart_items').insert({ cart_id: cart.id, product_id, quantity: 1 });
     }
 
     return sendJsonResponse(res, true, 200, "Product added to cart", []);
@@ -76,10 +76,10 @@ router.post('/addCartProduct/:cartId', userAuthMiddleware, async (req, res) => {
 // Remove product from cart
 router.delete('/removeCartProduct/:cartId/:productId', userAuthMiddleware, async (req, res) => {
   try {
-    const cart = await (await db.getKnex())('shopping_carts').where({ id: req.params.cartId }).first();
+    const cart = await (await databaseManager.getKnex())('shopping_carts').where({ id: req.params.cartId }).first();
     if (!cart) return sendJsonResponse(res, false, 404, "Cart not found", []);
 
-    await (await db.getKnex())('cart_items').where({ cart_id: cart.id, product_id: req.params.productId }).del();
+    await (await databaseManager.getKnex())('cart_items').where({ cart_id: cart.id, product_id: req.params.productId }).del();
     return sendJsonResponse(res, true, 200, "Product removed from cart", []);
   } catch (err) {
     return sendJsonResponse(res, false, 500, "Failed to remove product from cart", { details: err.message });
@@ -92,10 +92,10 @@ router.put('/updateCartProduct/:cartId/:productId', userAuthMiddleware, async (r
   if (!quantity) return sendJsonResponse(res, false, 400, "Missing fields", []);
 
   try {
-    const cart = await (await db.getKnex())('shopping_carts').where({ id: req.params.cartId }).first();
+    const cart = await (await databaseManager.getKnex())('shopping_carts').where({ id: req.params.cartId }).first();
     if (!cart) return sendJsonResponse(res, false, 404, "Cart not found", []);
 
-    await (await db.getKnex())('cart_items').where({ cart_id: cart.id, product_id: req.params.productId }).update({ quantity });
+    await (await databaseManager.getKnex())('cart_items').where({ cart_id: cart.id, product_id: req.params.productId }).update({ quantity });
     return sendJsonResponse(res, true, 200, "Cart item quantity updated", []);
   } catch (err) {
     return sendJsonResponse(res, false, 500, "Failed to update cart item", { details: err.message });
@@ -105,7 +105,7 @@ router.put('/updateCartProduct/:cartId/:productId', userAuthMiddleware, async (r
 // Get cart id by user id
 router.get('/getCartId/:userId', userAuthMiddleware, async (req, res) => {
   try {
-    const cart = await (await db.getKnex())('shopping_carts').where({ user_id: req.params.userId }).first();
+    const cart = await (await databaseManager.getKnex())('shopping_carts').where({ user_id: req.params.userId }).first();
     if (!cart) return sendJsonResponse(res, false, 404, "Cart not found", []);
     return sendJsonResponse(res, true, 200, "Cart ID fetched successfully", { cart_id: cart.id });
   } catch (err) {
@@ -116,10 +116,10 @@ router.get('/getCartId/:userId', userAuthMiddleware, async (req, res) => {
 // Remove all products from cart
 router.delete('/removeAllCartProducts/:cartId', userAuthMiddleware, async (req, res) => {
   try {
-    const cart = await (await db.getKnex())('cart_items').where({ cart_id: req.params.cartId }).del();
+    const cart = await (await databaseManager.getKnex())('cart_items').where({ cart_id: req.params.cartId }).del();
     if (!cart) return sendJsonResponse(res, false, 404, "Cart not found", []);
 
-    await (await db.getKnex())('shopping_carts').where({ id: req.user.id }).del();
+    await (await databaseManager.getKnex())('shopping_carts').where({ id: req.user.id }).del();
 
     return sendJsonResponse(res, true, 200, "All products removed from cart", []);
   } catch (err) {

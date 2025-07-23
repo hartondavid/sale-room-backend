@@ -17,7 +17,7 @@ function toMySQLDatetime(dateString) {
 // List all products
 router.get('/getAllProducts', userAuthMiddleware, async (req, res) => {
   try {
-    const products = await (await db.getKnex())('products')
+    const products = await (await databaseManager.getKnex())('products')
       .leftJoin('users', 'products.current_user_id', 'users.id')
       .where('products.status', 'active')
       .select('products.*', 'users.name as current_user_name')
@@ -31,7 +31,7 @@ router.get('/getAllProducts', userAuthMiddleware, async (req, res) => {
 router.get('/getProducts/:userId', userAuthMiddleware, async (req, res) => {
   try {
 
-    const products = await (await db.getKnex())('products').where({ user_id: req.params.userId })
+    const products = await (await databaseManager.getKnex())('products').where({ user_id: req.params.userId })
       .where('products.status', 'active')
       .leftJoin('users', 'products.current_user_id', 'users.id')
       .select('products.*', 'users.name as current_user_name');
@@ -44,7 +44,7 @@ router.get('/getProducts/:userId', userAuthMiddleware, async (req, res) => {
 
 router.get('/getProductsSold', userAuthMiddleware, async (req, res) => {
   try {
-    const products = await (await db.getKnex())('products')
+    const products = await (await databaseManager.getKnex())('products')
       .where({ "products.user_id": req.user.id })
       .where('products.end_date', '<', new Date())
       .where('products.start_date', '<', new Date())
@@ -61,7 +61,7 @@ router.get('/getOffers', userAuthMiddleware, async (req, res) => {
   try {
 
 
-    const products = await (await db.getKnex())('products').where({ 'products.current_user_id': req.user.id })
+    const products = await (await databaseManager.getKnex())('products').where({ 'products.current_user_id': req.user.id })
       .where('products.end_date', '<', new Date())
       .where('products.start_date', '<', new Date())
       .where('products.status', 'active')
@@ -78,7 +78,7 @@ router.get('/getOffers', userAuthMiddleware, async (req, res) => {
 
 router.get('/getFinishedOffers', userAuthMiddleware, async (req, res) => {
   try {
-    const products = await (await db.getKnex())('products').where({ user_id: req.user.id })
+    const products = await (await databaseManager.getKnex())('products').where({ user_id: req.user.id })
       .where('products.end_date', '<', new Date())
       .where('products.start_date', '<', new Date())
       .whereNot('products.status', 'paid')
@@ -93,7 +93,7 @@ router.get('/getFinishedOffers', userAuthMiddleware, async (req, res) => {
 
 router.get('/getPurchasedProducts', userAuthMiddleware, async (req, res) => {
   try {
-    const products = await (await db.getKnex())('products').where({ current_user_id: req.user.id, 'products.status': 'paid' })
+    const products = await (await databaseManager.getKnex())('products').where({ current_user_id: req.user.id, 'products.status': 'paid' })
 
       .leftJoin('users', 'products.current_user_id', 'users.id')
       .select('products.*', 'users.name as current_user_name');
@@ -108,7 +108,7 @@ router.get('/getPurchasedProducts', userAuthMiddleware, async (req, res) => {
 // Get product by id
 router.get('/getProduct/:productId', userAuthMiddleware, async (req, res) => {
   try {
-    const product = await (await db.getKnex())('products').where({ id: req.params.productId }).first();
+    const product = await (await databaseManager.getKnex())('products').where({ id: req.params.productId }).first();
     if (!product) return sendJsonResponse(res, false, 404, "Product not found", []);
     return sendJsonResponse(res, true, 200, "Product fetched successfully", product);
   } catch (err) {
@@ -149,7 +149,7 @@ router.post('/createProduct', userAuthMiddleware, upload.fields([{ name: 'photo'
       end_date: dateEndMySQL
     };
 
-    await (await db.getKnex())('products').insert(productData).returning('*');
+    await (await databaseManager.getKnex())('products').insert(productData).returning('*');
     return sendJsonResponse(res, true, 201, "Product created successfully", null);
   } catch (err) {
     return sendJsonResponse(res, false, 500, "Failed to create product", { details: err.message });
@@ -163,7 +163,7 @@ router.put('/updateProduct/:productId', userAuthMiddleware, upload.fields([{ nam
     const { name, initial_price, description, start_date, end_date } = req.body;
 
     // Fetch the current ad from the database
-    const currentAd = await (await db.getKnex())('products').where('id', req.params.productId).first();
+    const currentAd = await (await databaseManager.getKnex())('products').where('id', req.params.productId).first();
     if (!currentAd) {
       return sendJsonResponse(res, false, 404, "Ad not found", null);
     }
@@ -190,7 +190,7 @@ router.put('/updateProduct/:productId', userAuthMiddleware, upload.fields([{ nam
 
 
     // Update the request fund in the database
-    const updated = await (await db.getKnex())('products')
+    const updated = await (await databaseManager.getKnex())('products')
       .where('id', req.params.productId)
       .update(updateData);
     if (!updated) return sendJsonResponse(res, false, 404, "Product not found", []);
@@ -206,7 +206,7 @@ router.put('/increaseProductPrice/:productId', userAuthMiddleware, async (req, r
 
   try {
 
-    const updated = await (await db.getKnex())('products')
+    const updated = await (await databaseManager.getKnex())('products')
       .where({ id: req.params.productId })
       .update({
         current_price: new_price,
@@ -222,7 +222,7 @@ router.put('/increaseProductPrice/:productId', userAuthMiddleware, async (req, r
 // Delete product
 router.delete('/deleteProduct/:productId', userAuthMiddleware, async (req, res) => {
   try {
-    const deleted = await (await db.getKnex())('products').where({ id: req.params.productId, user_id: req.user.id }).del();
+    const deleted = await (await databaseManager.getKnex())('products').where({ id: req.params.productId, user_id: req.user.id }).del();
     if (!deleted) return sendJsonResponse(res, false, 404, "Product not found", []);
     return sendJsonResponse(res, true, 200, "Product deleted", []);
   } catch (err) {
