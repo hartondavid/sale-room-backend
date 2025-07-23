@@ -161,13 +161,14 @@ router.post('/register', async (req, res) => {
       const allRights = await (await databaseManager.getKnex())('rights').select('*');
       console.log('🔍 All rights in database:', allRights);
 
-      // Try to get just the ID directly
-      const rightCodeResult = await (await databaseManager.getKnex())('rights')
-        .where('right_code', numericRightCode)
-        .select('id')
-        .first();
+      // Try to get just the ID directly using raw SQL to avoid serialization issues
+      const rightCodeResult = await (await databaseManager.getKnex()).raw(
+        'SELECT id FROM rights WHERE right_code = ?',
+        [numericRightCode]
+      );
 
-      console.log('🔍 rightCodeResult:', rightCodeResult);
+      console.log('🔍 rightCodeResult raw:', rightCodeResult);
+      console.log('🔍 rightCodeResult.rows:', rightCodeResult.rows);
 
       const rightCode = await (await databaseManager.getKnex())('rights').where('right_code', numericRightCode).first();
 
@@ -185,7 +186,10 @@ router.post('/register', async (req, res) => {
       let rightId;
 
       // Try to use the direct ID query result first
-      if (rightCodeResult && rightCodeResult.id) {
+      if (rightCodeResult && rightCodeResult.rows && rightCodeResult.rows.length > 0) {
+        rightId = rightCodeResult.rows[0].id;
+        console.log('🔍 Using rightId from raw query:', rightId);
+      } else if (rightCodeResult && rightCodeResult.id) {
         rightId = rightCodeResult.id;
         console.log('🔍 Using rightId from direct query:', rightId);
       } else if (typeof rightCode.id === 'object' && rightCode.id !== null) {
@@ -194,6 +198,13 @@ router.post('/register', async (req, res) => {
         console.log('🔍 Extracted rightId from object:', rightId);
       } else {
         rightId = rightCode.id;
+      }
+
+      // Force conversion to number and handle any remaining object issues
+      if (typeof rightId === 'object' && rightId !== null) {
+        console.log('🔍 rightId is still an object, trying to extract value:', rightId);
+        rightId = rightId.id || rightId.value || Object.values(rightId)[0];
+        console.log('🔍 After second extraction:', rightId);
       }
 
       // Convert to number if it's a string
@@ -208,6 +219,12 @@ router.post('/register', async (req, res) => {
         console.error('❌ Invalid rightId:', rightId);
         return sendJsonResponse(res, false, 400, "ID-ul dreptului nu este valid", null);
       }
+
+      console.log('🔍 About to insert with values:', {
+        user_id: newUserId,
+        right_id: rightId,
+        right_id_type: typeof rightId
+      });
 
       await (await databaseManager.getKnex())('user_rights')
         .insert({
