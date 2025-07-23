@@ -122,6 +122,7 @@ const databaseManager = new DatabaseManager();
 // Export the manager instance as default
 export default databaseManager;
 
+
 // Graceful shutdown handling
 process.on('SIGINT', async () => {
     console.log('\n🔄 Shutting down gracefully...');
