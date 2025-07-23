@@ -1,7 +1,19 @@
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { put, del } from '@vercel/blob';
+
+// Try to import Vercel Blob, but don't fail if not available
+let put, del;
+try {
+    const blobModule = await import('@vercel/blob');
+    put = blobModule.put;
+    del = blobModule.del;
+    console.log('✅ Vercel Blob imported successfully');
+} catch (error) {
+    console.log('⚠️ Vercel Blob not available:', error.message);
+    put = null;
+    del = null;
+}
 
 // Function to create multer storage with a dynamic destination
 const createStorage = (uploadPath) => multer.diskStorage({
@@ -71,6 +83,10 @@ const createMulter = (destinationPath, allowedMimeTypes) => {
 
 // Function to upload file to Vercel Blob (optional)
 const uploadToBlob = async (file, filename) => {
+    if (!put) {
+        throw new Error('Vercel Blob not available');
+    }
+
     try {
         console.log('📤 Uploading to Vercel Blob:', filename);
 
@@ -124,6 +140,11 @@ const smartUpload = async (file, folder = 'products') => {
         const filename = `${folder}/${Date.now()}_${file.originalname}`;
 
         try {
+            // Check if Vercel Blob is available
+            if (!put) {
+                throw new Error('Vercel Blob not available');
+            }
+
             // Check if we have the required environment variables
             if (!process.env.BLOB_READ_WRITE_TOKEN) {
                 throw new Error('BLOB_READ_WRITE_TOKEN not configured');
@@ -181,6 +202,11 @@ const smartUpload = async (file, folder = 'products') => {
 
 // Function to delete file from Vercel Blob
 const deleteFromBlob = async (url) => {
+    if (!del) {
+        console.log('⚠️ Vercel Blob not available, skipping deletion');
+        return false;
+    }
+
     try {
         console.log('🗑️ Deleting from Vercel Blob:', url);
 
