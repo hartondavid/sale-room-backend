@@ -19,7 +19,7 @@ app.use(cors({
 }));
 
 // Import your routes
-import('./src/routes/apiRoute.mjs').then(({ default: apiRoutes }) => {
+import('../../src/routes/apiRoute.mjs').then(({ default: apiRoutes }) => {
     app.use('/api', apiRoutes);
     console.log('✅ API routes loaded successfully');
 }).catch(error => {
@@ -30,7 +30,7 @@ import('./src/routes/apiRoute.mjs').then(({ default: apiRoutes }) => {
 app.get('/api/test-db', async (req, res) => {
     try {
         // Import database test utility
-        const { testDatabaseConnection } = await import('./src/utils/databaseTest.mjs');
+        const { testDatabaseConnection } = await import('../../src/utils/databaseTest.mjs');
 
         const result = await testDatabaseConnection();
 
@@ -76,6 +76,73 @@ app.post('/api/setup-db', async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Database setup failed",
+            error: error.message
+        });
+    }
+});
+
+// Migration redirects
+app.get('/api/migrate/test', async (req, res) => {
+    try {
+        const baseUrl = req.get('host') || 'localhost:8888';
+        const protocol = req.get('x-forwarded-proto') || 'http';
+
+        const response = await fetch(`${protocol}://${baseUrl}/.netlify/functions/migrate/test`);
+        const result = await response.json();
+        res.json(result);
+    } catch (error) {
+        console.error("Migration test error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Migration test failed",
+            error: error.message
+        });
+    }
+});
+
+app.post('/api/migrate/migrate', async (req, res) => {
+    try {
+        const baseUrl = req.get('host') || 'localhost:8888';
+        const protocol = req.get('x-forwarded-proto') || 'http';
+
+        const response = await fetch(`${protocol}://${baseUrl}/.netlify/functions/migrate/migrate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const result = await response.json();
+        res.json(result);
+    } catch (error) {
+        console.error("Migration error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Migration failed",
+            error: error.message
+        });
+    }
+});
+
+app.post('/api/migrate/seed', async (req, res) => {
+    try {
+        const baseUrl = req.get('host') || 'localhost:8888';
+        const protocol = req.get('x-forwarded-proto') || 'http';
+
+        const response = await fetch(`${protocol}://${baseUrl}/.netlify/functions/migrate/seed`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const result = await response.json();
+        res.json(result);
+    } catch (error) {
+        console.error("Seed error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Seed failed",
             error: error.message
         });
     }
