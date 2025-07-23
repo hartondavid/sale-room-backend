@@ -166,15 +166,31 @@ router.post('/register', async (req, res) => {
       console.log('🔍 rightCode found:', rightCode);
       console.log('🔍 rightCode.id type:', typeof rightCode?.id);
       console.log('🔍 rightCode.id value:', rightCode?.id);
+      console.log('🔍 rightCode full object:', JSON.stringify(rightCode, null, 2));
 
       if (!rightCode) {
         return sendJsonResponse(res, false, 400, "Dreptul nu a fost găsit", null);
       }
 
+      // Ensure right_id is a number
+      let rightId = typeof rightCode.id === 'object' ? rightCode.id.id : rightCode.id;
+
+      // Convert to number if it's a string
+      if (typeof rightId === 'string') {
+        rightId = parseInt(rightId, 10);
+      }
+
+      console.log('🔍 Final right_id value:', rightId);
+      console.log('🔍 Final right_id type:', typeof rightId);
+
+      if (typeof rightId !== 'number' || isNaN(rightId)) {
+        return sendJsonResponse(res, false, 400, "ID-ul dreptului nu este valid", null);
+      }
+
       await (await databaseManager.getKnex())('user_rights')
         .insert({
           user_id: newUserId,
-          right_id: rightCode.id
+          right_id: rightId
         });
 
       sendJsonResponse(res, true, 201, "Utilizatorul a fost creat cu succes", { id: newUserId });
