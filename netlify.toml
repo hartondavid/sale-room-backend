@@ -17,4 +17,8 @@
   status = 200
 
 [functions]
-  node_bundler = "esbuild" 
+  node_bundler = "esbuild"
+  external_node_modules = ["pg-native"]
+
+[functions."api"]
+  timeout = 30 

@@ -12,7 +12,7 @@ class DatabaseManager {
     async connect() {
         try {
             if (!this.knex) {
-                console.log('🔌 Connecting to database...');
+                console.log('🔌 Connecting to Neon database...');
 
                 // Select the correct environment configuration
                 const environment = process.env.NODE_ENV || 'production';
@@ -20,7 +20,7 @@ class DatabaseManager {
 
                 console.log('📊 Database config:', {
                     environment,
-                    connection: config.connection
+                    hasConnectionString: !!config.connection
                 });
 
                 this.knex = knex(config);
@@ -28,7 +28,7 @@ class DatabaseManager {
                 // Test the connection
                 await this.knex.raw('SELECT 1');
                 this.isConnected = true;
-                console.log('✅ Database connected successfully');
+                console.log('✅ Neon database connected successfully');
 
                 // Check if database exists
                 try {
