@@ -31,23 +31,34 @@ app.get('/api/test-db', async (req, res) => {
     try {
         console.log('🔍 Testing database connection...');
 
-        // Use direct PostgreSQL client instead of knex
-        const { Client } = require('pg');
+        const knex = require('knex');
 
-        const client = new Client({
-            connectionString: process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL,
-            ssl: { rejectUnauthorized: false }
+        const db = knex({
+            client: 'pg',
+            connection: process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL,
+            ssl: { rejectUnauthorized: false },
+            pool: {
+                min: 0,
+                max: 1,
+                acquireTimeoutMillis: 30000,
+                createTimeoutMillis: 30000,
+                destroyTimeoutMillis: 5000,
+                idleTimeoutMillis: 30000,
+                reapIntervalMillis: 1000,
+                createRetryIntervalMillis: 100
+            }
         });
 
-        await client.connect();
+        // Test connection
+        await db.raw('SELECT 1');
         console.log('✅ Basic connection test passed');
 
         // Get database information
-        const dbInfo = await client.query('SELECT current_database() as db_name, version() as version');
+        const dbInfo = await db.raw('SELECT current_database() as db_name, version() as version');
         console.log('📊 Database info:', dbInfo.rows[0]);
 
         // Test table existence
-        const tables = await client.query(`
+        const tables = await db.raw(`
             SELECT table_name 
             FROM information_schema.tables 
             WHERE table_schema = 'public'
@@ -56,7 +67,7 @@ app.get('/api/test-db', async (req, res) => {
 
         console.log('📋 Available tables:', tables.rows.map(row => row.table_name));
 
-        await client.end();
+        await db.destroy();
 
         res.json({
             success: true,
@@ -84,21 +95,32 @@ app.get('/api/simple-db-test', async (req, res) => {
     try {
         console.log('🔍 Testing simple database connection...');
 
-        // Use direct PostgreSQL client instead of knex
-        const { Client } = require('pg');
+        const knex = require('knex');
 
-        const client = new Client({
-            connectionString: process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL,
-            ssl: { rejectUnauthorized: false }
+        const db = knex({
+            client: 'pg',
+            connection: process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL,
+            ssl: { rejectUnauthorized: false },
+            pool: {
+                min: 0,
+                max: 1,
+                acquireTimeoutMillis: 30000,
+                createTimeoutMillis: 30000,
+                destroyTimeoutMillis: 5000,
+                idleTimeoutMillis: 30000,
+                reapIntervalMillis: 1000,
+                createRetryIntervalMillis: 100
+            }
         });
 
-        await client.connect();
+        // Test connection
+        await db.raw('SELECT 1');
         console.log('✅ Database connection successful');
 
         // Get database info
-        const dbInfo = await client.query('SELECT current_database() as db_name, version() as version');
+        const dbInfo = await db.raw('SELECT current_database() as db_name, version() as version');
 
-        await client.end();
+        await db.destroy();
 
         res.json({
             success: true,
