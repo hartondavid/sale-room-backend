@@ -2,16 +2,43 @@ const knex = require('knex');
 const path = require('path');
 require('dotenv').config();
 
+// Check environment variables
+console.log('🔍 Environment Variables Check:');
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL);
+console.log('NETLIFY_DATABASE_URL exists:', !!process.env.NETLIFY_DATABASE_URL);
+
+const connectionString = process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL;
+
+if (!connectionString) {
+    console.error('❌ No database connection string found!');
+    console.log('Please set either DATABASE_URL or NETLIFY_DATABASE_URL in your .env file');
+    process.exit(1);
+}
+
+console.log('✅ Connection string found');
+console.log('Connection string starts with:', connectionString.substring(0, 20) + '...');
+
 // Configure knex for local testing
 const knexConfig = {
     client: 'pg',
-    connection: process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL,
+    connection: connectionString,
     ssl: { rejectUnauthorized: false },
     migrations: {
         directory: path.join(__dirname, 'migrations')
     },
     seeds: {
         directory: path.join(__dirname, 'seeds')
+    },
+    pool: {
+        min: 0,
+        max: 1,
+        acquireTimeoutMillis: 30000,
+        createTimeoutMillis: 30000,
+        destroyTimeoutMillis: 5000,
+        idleTimeoutMillis: 30000,
+        reapIntervalMillis: 1000,
+        createRetryIntervalMillis: 100
     }
 };
 
