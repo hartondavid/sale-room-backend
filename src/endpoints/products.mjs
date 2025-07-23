@@ -130,8 +130,15 @@ router.post('/createProduct', userAuthMiddleware, upload.fields([{ name: 'photo'
       return sendJsonResponse(res, false, 400, "Image is required", null);
     }
 
-    let filePathForImagePath = req.files['photo'][0].path; // Get the full file path
-    filePathForImagePath = filePathForImagePath.replace(/^public[\\/]/, '');
+    // Use smartUpload to handle both local and serverless environments
+    let filePathForImagePath;
+    try {
+      filePathForImagePath = await smartUpload(req.files['photo'][0], 'products');
+      console.log('📁 File uploaded successfully:', filePathForImagePath);
+    } catch (uploadError) {
+      console.error('❌ File upload failed:', uploadError);
+      return sendJsonResponse(res, false, 500, "File upload failed", { details: uploadError.message });
+    }
 
 
     const dateStartMySQL = toMySQLDatetime(start_date);
@@ -183,9 +190,10 @@ router.put('/updateProduct/:productId', userAuthMiddleware, upload.fields([{ nam
 
 
     if (req.files && req.files['photo'] && req.files['photo'][0]) {
-      let filePathForImagePath = req.files['photo'][0].path;
-      filePathForImagePath = filePathForImagePath.replace(/^public[\\/]/, '');
-      updateData.photo = filePathForImagePath;
+      // Use smart upload function that automatically chooses storage method
+      const photoUrl = await smartUpload(req.files['photo'][0], 'cakes');
+      console.log('🔍 updateCake - Photo URL determined:', photoUrl);
+      updateData.photo = photoUrl;
     }
 
 
@@ -222,8 +230,17 @@ router.put('/increaseProductPrice/:productId', userAuthMiddleware, async (req, r
 // Delete product
 router.delete('/deleteProduct/:productId', userAuthMiddleware, async (req, res) => {
   try {
-    const deleted = await (await databaseManager.getKnex())('products').where({ id: req.params.productId, user_id: req.user.id }).del();
+    const deleted = await (await databaseManager.getKnex())('products').where({ id: req.params.productId, user_id: req.user.id }).first();
+
+    // Delete the image from Vercel Blob if it's a Blob URL
+    if (deleted.photo) {
+      console.log('🔍 deleteCake - Deleting image:', deleted.photo);
+      await deleteFromBlob(deleted.photo);
+    }
+
+    await (await databaseManager.getKnex())('products').where({ id: req.params.productId, user_id: req.user.id }).del();
     if (!deleted) return sendJsonResponse(res, false, 404, "Product not found", []);
+
     return sendJsonResponse(res, true, 200, "Product deleted", []);
   } catch (err) {
     return sendJsonResponse(res, false, 500, "Failed to delete product", { details: err.message });
