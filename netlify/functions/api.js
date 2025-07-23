@@ -2,6 +2,7 @@ const serverless = require('serverless-http');
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const fetch = require('node-fetch');
 
 // Load environment variables
 dotenv.config();
@@ -49,29 +50,27 @@ app.get('/api/test-db', async (req, res) => {
     }
 });
 
-// Database setup endpoint (run migrations and seeds)
+// Database setup endpoint (redirects to migrate function)
 app.post('/api/setup-db', async (req, res) => {
     try {
-        const { runMigrations, runSeeds } = await import('./src/utils/databaseTest.mjs');
+        // Redirect to the migrate function
+        const baseUrl = req.get('host') || 'localhost:8888';
+        const protocol = req.get('x-forwarded-proto') || 'http';
 
-        // Run migrations
-        const migrationResult = await runMigrations();
-        if (!migrationResult.success) {
-            return res.status(500).json(migrationResult);
-        }
-
-        // Run seeds
-        const seedResult = await runSeeds();
-        if (!seedResult.success) {
-            return res.status(500).json(seedResult);
-        }
-
-        res.json({
-            success: true,
-            message: "Database setup completed successfully",
-            migrations: migrationResult,
-            seeds: seedResult
+        const response = await fetch(`${protocol}://${baseUrl}/.netlify/functions/migrate/setup`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
         });
+
+        const result = await response.json();
+
+        if (result.success) {
+            res.json(result);
+        } else {
+            res.status(500).json(result);
+        }
     } catch (error) {
         console.error("Database setup error:", error);
         res.status(500).json({
