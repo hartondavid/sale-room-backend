@@ -25,7 +25,7 @@
 [functions]
   node_bundler = "esbuild"
   external_node_modules = ["pg-native"]
-  included_files = ["node_modules/pg/**/*"]
+  included_files = ["node_modules/pg/**/*", "node_modules/pg-types/**/*"]
 
 [functions."api"]
   timeout = 30 
