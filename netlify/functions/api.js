@@ -31,9 +31,8 @@ app.get('/api/test-db', async (req, res) => {
     try {
         console.log('🔍 Testing database connection...');
 
-        const knex = require('knex');
-
-        const db = knex({
+        // Direct database connection test
+        const knex = require('knex')({
             client: 'pg',
             connection: process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL,
             ssl: { rejectUnauthorized: false },
@@ -49,16 +48,16 @@ app.get('/api/test-db', async (req, res) => {
             }
         });
 
-        // Test connection
-        await db.raw('SELECT 1');
+        // Test basic connection
+        await knex.raw('SELECT 1');
         console.log('✅ Basic connection test passed');
 
         // Get database information
-        const dbInfo = await db.raw('SELECT current_database() as db_name, version() as version');
+        const dbInfo = await knex.raw('SELECT current_database() as db_name, version() as version');
         console.log('📊 Database info:', dbInfo.rows[0]);
 
         // Test table existence
-        const tables = await db.raw(`
+        const tables = await knex.raw(`
             SELECT table_name 
             FROM information_schema.tables 
             WHERE table_schema = 'public'
@@ -67,7 +66,7 @@ app.get('/api/test-db', async (req, res) => {
 
         console.log('📋 Available tables:', tables.rows.map(row => row.table_name));
 
-        await db.destroy();
+        await knex.destroy();
 
         res.json({
             success: true,
@@ -95,9 +94,8 @@ app.get('/api/simple-db-test', async (req, res) => {
     try {
         console.log('🔍 Testing simple database connection...');
 
-        const knex = require('knex');
-
-        const db = knex({
+        // Direct database connection test
+        const knex = require('knex')({
             client: 'pg',
             connection: process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL,
             ssl: { rejectUnauthorized: false },
@@ -113,14 +111,14 @@ app.get('/api/simple-db-test', async (req, res) => {
             }
         });
 
-        // Test connection
-        await db.raw('SELECT 1');
+        // Test database connection
+        await knex.raw('SELECT 1');
         console.log('✅ Database connection successful');
 
         // Get database info
-        const dbInfo = await db.raw('SELECT current_database() as db_name, version() as version');
+        const dbInfo = await knex.raw('SELECT current_database() as db_name, version() as version');
 
-        await db.destroy();
+        await knex.destroy();
 
         res.json({
             success: true,
