@@ -12,6 +12,15 @@ const dbConfig = {
     ssl: { rejectUnauthorized: false }
 };
 
+// Simple test endpoint
+app.get('/', (req, res) => {
+    res.json({
+        success: true,
+        message: "Migrate function is working",
+        timestamp: new Date().toISOString()
+    });
+});
+
 // Raw SQL migrations
 const migrations = [
     {
