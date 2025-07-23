@@ -17,14 +17,14 @@ module.exports = {
     // Used when you run your app locally
     development: {
         ...baseConfig,
-        connection: process.env.DATABASE_URL,
+        connection: process.env.DATABASE_URL || process.env.NETLIFY_DATABASE_URL,
     },
 
     // --- Production Environment ---
     // Used by Netlify when you deploy
     production: {
         ...baseConfig,
-        connection: process.env.DATABASE_URL,
+        connection: process.env.DATABASE_URL || process.env.NETLIFY_DATABASE_URL,
         // SSL is required for connecting to Neon from Netlify
         ssl: { rejectUnauthorized: false },
         // Optimized pool config for serverless environment

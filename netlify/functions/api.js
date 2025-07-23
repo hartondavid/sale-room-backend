@@ -28,28 +28,16 @@ import('./src/routes/apiRoute.mjs').then(({ default: apiRoutes }) => {
 // Database test endpoint
 app.get('/api/test-db', async (req, res) => {
     try {
-        console.log('🔍 Testing Neon database connection...');
+        // Import database test utility
+        const { testDatabaseConnection } = await import('./src/utils/databaseTest.mjs');
 
-        // Import database manager
-        const { default: databaseManager } = await import('./src/utils/database.mjs');
+        const result = await testDatabaseConnection();
 
-        // Test database connection
-        const knex = await databaseManager.getKnex();
-        await knex.raw('SELECT 1');
-        console.log('✅ Database connection successful');
-
-        // Get database info
-        const dbInfo = await knex.raw('SELECT current_database() as db_name, version() as version');
-
-        res.json({
-            success: true,
-            message: "Neon database connection successful",
-            data: {
-                database: dbInfo.rows[0].db_name,
-                version: dbInfo.rows[0].version,
-                environment: process.env.NODE_ENV || 'production'
-            }
-        });
+        if (result.success) {
+            res.json(result);
+        } else {
+            res.status(500).json(result);
+        }
     } catch (error) {
         console.error("Database test error:", error);
         res.status(500).json({
@@ -57,6 +45,39 @@ app.get('/api/test-db', async (req, res) => {
             message: "Database connection failed",
             error: error.message,
             environment: process.env.NODE_ENV || 'production'
+        });
+    }
+});
+
+// Database setup endpoint (run migrations and seeds)
+app.post('/api/setup-db', async (req, res) => {
+    try {
+        const { runMigrations, runSeeds } = await import('./src/utils/databaseTest.mjs');
+
+        // Run migrations
+        const migrationResult = await runMigrations();
+        if (!migrationResult.success) {
+            return res.status(500).json(migrationResult);
+        }
+
+        // Run seeds
+        const seedResult = await runSeeds();
+        if (!seedResult.success) {
+            return res.status(500).json(seedResult);
+        }
+
+        res.json({
+            success: true,
+            message: "Database setup completed successfully",
+            migrations: migrationResult,
+            seeds: seedResult
+        });
+    } catch (error) {
+        console.error("Database setup error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Database setup failed",
+            error: error.message
         });
     }
 });
