@@ -161,19 +161,40 @@ router.post('/register', async (req, res) => {
       const allRights = await (await databaseManager.getKnex())('rights').select('*');
       console.log('🔍 All rights in database:', allRights);
 
+      // Try to get just the ID directly
+      const rightCodeResult = await (await databaseManager.getKnex())('rights')
+        .where('right_code', numericRightCode)
+        .select('id')
+        .first();
+
+      console.log('🔍 rightCodeResult:', rightCodeResult);
+
       const rightCode = await (await databaseManager.getKnex())('rights').where('right_code', numericRightCode).first();
 
       console.log('🔍 rightCode found:', rightCode);
       console.log('🔍 rightCode.id type:', typeof rightCode?.id);
       console.log('🔍 rightCode.id value:', rightCode?.id);
+      console.log('🔍 rightCode.id keys (if object):', rightCode?.id ? Object.keys(rightCode.id) : 'N/A');
       console.log('🔍 rightCode full object:', JSON.stringify(rightCode, null, 2));
 
       if (!rightCode) {
         return sendJsonResponse(res, false, 400, "Dreptul nu a fost găsit", null);
       }
 
-      // Ensure right_id is a number
-      let rightId = typeof rightCode.id === 'object' ? rightCode.id.id : rightCode.id;
+      // Ensure right_id is a number - handle nested object case
+      let rightId;
+
+      // Try to use the direct ID query result first
+      if (rightCodeResult && rightCodeResult.id) {
+        rightId = rightCodeResult.id;
+        console.log('🔍 Using rightId from direct query:', rightId);
+      } else if (typeof rightCode.id === 'object' && rightCode.id !== null) {
+        // If it's an object, try to extract the id
+        rightId = rightCode.id.id || rightCode.id.value || Object.values(rightCode.id)[0];
+        console.log('🔍 Extracted rightId from object:', rightId);
+      } else {
+        rightId = rightCode.id;
+      }
 
       // Convert to number if it's a string
       if (typeof rightId === 'string') {
@@ -184,6 +205,7 @@ router.post('/register', async (req, res) => {
       console.log('🔍 Final right_id type:', typeof rightId);
 
       if (typeof rightId !== 'number' || isNaN(rightId)) {
+        console.error('❌ Invalid rightId:', rightId);
         return sendJsonResponse(res, false, 400, "ID-ul dreptului nu este valid", null);
       }
 
