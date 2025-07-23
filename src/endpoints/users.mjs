@@ -245,17 +245,27 @@ router.post('/register', async (req, res) => {
         return sendJsonResponse(res, false, 400, "ID-ul dreptului nu este valid", null);
       }
 
-      console.log('🔍 About to insert with values:', {
-        user_id: newUserId,
-        right_id: rightId,
-        right_id_type: typeof rightId
-      });
+      // Check if user_rights record already exists
+      const existingUserRight = await (await databaseManager.getKnex())('user_rights')
+        .where({ user_id: newUserId, right_id: rightId })
+        .first();
 
-      await (await databaseManager.getKnex())('user_rights')
-        .insert({
+      if (existingUserRight) {
+        console.log('⚠️ User right already exists:', existingUserRight);
+        // Don't return error, just continue since the user is already created
+      } else {
+        console.log('🔍 About to insert with values:', {
           user_id: newUserId,
-          right_id: rightId
+          right_id: rightId,
+          right_id_type: typeof rightId
         });
+
+        await (await databaseManager.getKnex())('user_rights')
+          .insert({
+            user_id: newUserId,
+            right_id: rightId
+          });
+      }
 
       sendJsonResponse(res, true, 201, "Utilizatorul a fost creat cu succes", { id: newUserId });
     } else {
