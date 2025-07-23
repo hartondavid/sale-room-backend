@@ -17,14 +17,14 @@ module.exports = {
     // Used when you run your app locally
     development: {
         ...baseConfig,
-        connection: process.env.DATABASE_URL, // Reads the connection string from your .env.local file
+        connection: process.env.POSTGRES_URL, // Reads the connection string from your .env.local file
     },
 
     // --- Production Environment ---
     // Used by Vercel when you deploy
     production: {
         ...baseConfig,
-        connection: process.env.DATABASE_URL,
+        connection: process.env.POSTGRES_URL,
         // SSL is required for connecting to Supabase from a cloud environment like Vercel
         ssl: { rejectUnauthorized: false },
         // The connection pool is managed by Supabase's PgBouncer, 
