@@ -42,18 +42,18 @@ app.use((req, res, next) => {
     // Set CORS headers for all requests - allow frontend domain and subdomains
     const origin = req.headers.origin;
     console.log('🔍 CORS Debug - Origin:', origin);
-    console.log('🔍 CORS Debug - Starts with delivery.davidharton.online:', origin?.startsWith('https://delivery.davidharton.online'));
+    console.log('🔍 CORS Debug - Starts with delivery.davidharton.online:', origin?.startsWith('https://saleroom.davidharton.online'));
     console.log('🔍 CORS Debug - Starts with localhost:', origin?.startsWith('http://localhost:'));
 
     if (origin && (
-        origin.startsWith('https://delivery.davidharton.online') ||
+        origin.startsWith('https://saleroom.davidharton.online') ||
         origin.startsWith('http://localhost:')
     )) {
         console.log('✅ CORS Debug - Setting origin to:', origin);
         res.header('Access-Control-Allow-Origin', origin);
     } else {
         console.log('⚠️ CORS Debug - Using default origin');
-        res.header('Access-Control-Allow-Origin', 'https://delivery.davidharton.online');
+        res.header('Access-Control-Allow-Origin', 'https://saleroom.davidharton.online');
     }
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
