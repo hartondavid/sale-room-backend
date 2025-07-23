@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { userAuthMiddleware } from "../utils/middlewares/userAuthMiddleware.mjs";
-import db from "../utils/database.mjs";
+import databaseManager from "../utils/database.mjs";
 import { sendJsonResponse } from "../utils/utilFunctions.mjs";
 
 const router = Router();
