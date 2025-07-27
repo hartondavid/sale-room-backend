@@ -76,6 +76,7 @@ class DatabaseManager {
         }
     }
 
+
     async getKnex() {
         if (!this.knex) {
             await this.connect();
